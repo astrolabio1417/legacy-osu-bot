@@ -1,0 +1,6 @@
+.env
+test.txt
+test.py
+config.json
+.mypy_cache
+__pycache__
