@@ -366,6 +366,73 @@ class Room:
             f"Alternative Links: {message_beatmap_links('osu.ppy.sh', self.__beatmap)}",
         )
 
+    def on_message_receive(self, sender: str, message: str) -> None:
+        """room message"""
+
+        if sender == "BanchoBot":
+            """banchobot chats"""
+            if message == "Closed the match":
+                self.on_match_closed()
+            elif "joined in slot" in message:
+                username = parse_username(message.split(" joined in slot")[0])
+                self.on_user_joined(username)
+            elif message.endswith("left the game."):
+                username = parse_username(message.split(" left the game.")[0])
+                self.on_user_left(username)
+            elif message.endswith(" became the host."):
+                username = parse_username(
+                    message.split(" became the host.")[0]
+                )
+                self.on_host_changed(username)
+            elif message == "The match has started!":
+                self.on_match_started()
+            elif message == "The match has finished!":
+                self.on_match_finished()
+            elif message == "All players are ready":
+                self.on_match_ready()
+            elif message.startswith("Beatmap changed to: "):
+                search = re.search(
+                    "Beatmap.*?: (.*)? \[(.*?)\] \((.*)?\)", message
+                )
+                if search:
+                    self.on_beatmap_changed_to(
+                        version=search.group(2),
+                        title=search.group(1),
+                        url=search.group(3),
+                        beatmap_id=int(search.group(3).split("/")[-1]),
+                    )
+            elif message.startswith("Changed beatmap to "):
+                message_split = message.split(" ")
+                url = message_split[3]
+                url_split = url.split("/")
+                beatmap_id = url_split[-1]
+                title = "".join(message_split[4:])
+                self.on_changed_beatmap_to(
+                    title=title,
+                    beatmap_id=int(beatmap_id) if beatmap_id.isdigit() else 0,
+                    url=url,
+                )
+            elif message.startswith("Slot "):
+                self.on_slot(**parse_slot(message))
+            elif message.startswith("Players: "):
+                self.on_players(players=int(message.split(" ")[-1]))
+        else:
+            """players chat"""
+            if message.startswith("!start"):
+                self.on_message_start(message)
+            elif message == "!stop":
+                self.on_message_stop()
+            elif message == "!users":
+                self.on_message_users()
+            elif message == "!skip":
+                self.on_skip(sender=sender)
+            elif message == "!queue":
+                self.on_message_queue()
+            elif message == "!info":
+                self.on_message_info()
+            elif message == "!alt":
+                self.on_message_alt()
+
 
 @dataclass
 class RoomBot:
@@ -410,114 +477,41 @@ class RoomBot:
             if room:
                 room.on_match_created(room_id=f"#mp_{room_id}")
 
-    def on_private_message(
-        self, channel: str, cmd_str: str, sender: str, message: str
-    ) -> None:
-        if sender == "BanchoBot":
-            if message.startswith("Created the tournament match"):
-                self.on_match_created(message)
-        else:
-            pass
+    def on_message_receive(self, message: Optional[str | int | bool]) -> None:
+        self.check_rooms()
 
-    def on_room_message(
-        self, channel: str, cmd_str: str, sender: str, message: str
-    ) -> None:
-        room = self.get_room(room_id=channel)
+        if isinstance(message, str):
+            message_dict = parse_message(message=message)
 
-        if not isinstance(room, Room):
-            return
+            if not message_dict:
+                return
 
-        """room message"""
-        if sender == "BanchoBot":
-            """banchobot chats"""
-            if message == "Closed the match":
-                room.on_match_closed()
-            elif "joined in slot" in message:
-                username = parse_username(message.split(" joined in slot")[0])
-                room.on_user_joined(username)
-            elif message.endswith("left the game."):
-                username = parse_username(message.split(" left the game.")[0])
-                room.on_user_left(username)
-            elif message.endswith(" became the host."):
-                username = parse_username(
-                    message.split(" became the host.")[0]
-                )
-                room.on_host_changed(username)
-            elif message == "The match has started!":
-                room.on_match_started()
-            elif message == "The match has finished!":
-                room.on_match_finished()
-            elif message == "All players are ready":
-                room.on_match_ready()
-            elif message.startswith("Beatmap changed to: "):
-                search = re.search(
-                    "Beatmap.*?: (.*)? \[(.*?)\] \((.*)?\)", message
-                )
-                if search:
-                    room.on_beatmap_changed_to(
-                        version=search.group(2),
-                        title=search.group(1),
-                        url=search.group(3),
-                        beatmap_id=int(search.group(3).split("/")[-1]),
-                    )
-            elif message.startswith("Changed beatmap to "):
-                message_split = message.split(" ")
-                url = message_split[3]
-                url_split = url.split("/")
-                beatmap_id = url_split[-1]
-                title = "".join(message_split[4:])
-                room.on_changed_beatmap_to(
-                    title=title,
-                    beatmap_id=int(beatmap_id) if beatmap_id.isdigit() else 0,
-                    url=url,
-                )
-            elif message.startswith("Slot "):
-                room.on_slot(**parse_slot(message))
-            elif message.startswith("Players: "):
-                room.on_players(players=int(message.split(" ")[-1]))
-        else:
-            """players chat"""
-            if message.startswith("!start"):
-                room.on_message_start(message)
-            elif message == "!stop":
-                room.on_message_stop()
-            elif message == "!users":
-                room.on_message_users()
-            elif message == "!skip":
-                room.on_skip(sender=sender)
-            elif message == "!queue":
-                room.on_message_queue()
-            elif message == "!info":
-                room.on_message_info()
-            elif message == "!alt":
-                room.on_message_alt()
+            channel = message_dict.get("channel", "")
+            cmd_str = message_dict.get("command", "")
+            sender = message_dict.get("sender", "")
+            message = message_dict.get("message", "")
+
+            if cmd_str != "QUIT":
+                print(message)
+            elif channel == self.irc.username:
+                """PRIVATE MESSAGE"""
+                if sender == "BanchoBot":
+                    if message.startswith("Created the tournament match"):
+                        self.on_match_created(message)
+            elif channel.startswith("#mp_"):
+                """ROOM MESSAGE"""
+                room = self.get_room(room_id=channel)
+
+                if isinstance(room, Room):
+                    room.on_message_receive(sender, message)
+        elif message == -1:
+            self.disconnect_rooms()
+        elif message == -2:
+            print("Reconnecting...")
 
     def start(self) -> None:
         """start receiving messages"""
         print("starting")
 
         for message in self.irc.message_generator():
-            self.check_rooms()
-
-            if isinstance(message, str):
-                message_dict = parse_message(message=message)
-                if not message_dict:
-                    continue
-
-                channel = message_dict.get("channel", "")
-                cmd_str = message_dict.get("command", "")
-                sender = message_dict.get("sender", "")
-                message = message_dict.get("message", "")
-                if cmd_str != "QUIT":
-                    print(message)
-
-                if channel == self.irc.username:
-                    """PRIVATE MESSAGE"""
-                    self.on_private_message(channel, cmd_str, sender, message)
-                elif channel.startswith("#mp_"):
-                    """ROOM MESSAGE"""
-                    self.on_room_message(channel, cmd_str, sender, message)
-            elif message == -1:
-                self.disconnect_rooms()
-            elif message == -2:
-                print("Reconnecting...")
+            self.on_message_receive(message)
