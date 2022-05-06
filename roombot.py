@@ -132,6 +132,14 @@ class Room:
         self.score_mode = score_mode or self.score_mode
         self.room_size = room_size or self.room_size
 
+    def restart(self) -> None:
+        self.room_id = ""
+        self.__users = []
+        self.__skips = []
+        self.__connected = False
+        self.__created = False
+        self.__configured = False
+
     def check_room(self) -> None:
         """create the room or reconnect to the room"""
         if self.closed:
@@ -154,6 +162,7 @@ class Room:
     def on_match_created(self, room_id: str) -> None:
         print(f"Room Created {room_id} {self.name}")
         self.room_id = room_id
+        self.irc.send_private(self.room_id, f"JOIN {self.room_id}")
         self.setup()
         self.rotate()
 
@@ -166,6 +175,10 @@ class Room:
 
     def setup(self) -> None:
         print(f"Setup {self.room_id} {self.name}")
+
+        if self.__configured:
+            return
+
         messages = [
             f"!mp name {self.name}",
             f"!mp password {self.password}",
@@ -357,7 +370,7 @@ class Room:
     def on_message_info(self) -> None:
         self.irc.send_private(
             self.room_id,
-            f"Commands: start <seconds>, stop, queue, skip, alt | Nothing to see here...",
+            f"Commands: !start <seconds>, !stop, !queue, !skip, !alt",
         )
 
     def on_message_alt(self) -> None:
@@ -491,9 +504,23 @@ class RoomBot:
             sender = message_dict.get("sender", "")
             message = message_dict.get("message", "")
 
-            if cmd_str != "QUIT":
-                print(message)
-            elif channel == self.irc.username:
+            if cmd_str == "QUIT":
+                return
+
+            print(channel, cmd_str, sender, message)
+
+            if (
+                sender == "cho.ppy.sh"
+                and message.startswith("#mp_")
+                and "No such channel #mp_" in message
+            ):
+                room_id = message.split(" ")[0]
+                room = self.get_room(room_id=room_id)
+
+                if room:
+                    room.restart()
+
+            if channel == self.irc.username:
                 """PRIVATE MESSAGE"""
                 if sender == "BanchoBot":
                     if message.startswith("Created the tournament match"):
@@ -512,6 +539,7 @@ class RoomBot:
     def start(self) -> None:
         """start receiving messages"""
         print("starting")
-
-        for message in self.irc.message_generator():
-            self.on_message_receive(message)
+        with open("logs/messages.txt", "w") as f:
+            for message in self.irc.message_generator():
+                f.write(f"{message}\n")
+                self.on_message_receive(message)
