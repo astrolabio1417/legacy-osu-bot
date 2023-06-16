@@ -127,6 +127,8 @@ def chimu_search(
     beatmaps = []
     new_settings = settings.get_dict()
     print(new_settings)
+    max_retry = 10
+    retry = 0
 
     while True:
         print(f"OFFSET {offset[0]}/{offset[1]}")
@@ -142,6 +144,9 @@ def chimu_search(
 
         if not response.ok:
             print(f"bad response {offset[0]}")
+            if retry >= max_retry:
+                return
+            retry += 1
             continue
 
         try:
@@ -162,6 +167,8 @@ def chimu_search(
             with open(f"files/{filename}.json", "w") as f:
                 f.write(json.dumps(beatmaps))
 
+            retry = 0
+            
             if offset[0] >= offset[1]:
                 print(f"Finished. Total {len(beatmaps)}")
                 return
@@ -170,11 +177,10 @@ def chimu_search(
 
 
 def chimu_test() -> None:
-    settings = ChimuSearchDict(mode=0, status=4, language=3)
+    settings = ChimuSearchDict(mode=0, status=1, language=3)
     chimu_search(
-        offset=(0, 50),
         settings=settings,
-        filename="test-loved-jp",
+        filename="std-06-17-23-1v-jp",
     )
 
 
@@ -213,4 +219,5 @@ def chimu_beatmapset_parser(beatmapsets: list[Any]) -> list[Any]:
 
 
 if __name__ == "__main__":
+    # chimu_test()
     pass
