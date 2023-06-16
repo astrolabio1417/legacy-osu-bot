@@ -1,4 +1,4 @@
-# legacy api | osubot | host rotate | map rotate
+# legacy | osubot | host rotate | map rotate
 
 ##### TEAM_MODE
 
@@ -42,6 +42,7 @@
 }
 ```
 
+-   edit main.js
 -   run the app
 
 ```
