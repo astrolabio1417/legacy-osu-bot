@@ -3,6 +3,7 @@ import socket
 from typing import Generator
 from constants import MESSAGE_YIELD
 
+
 @dataclass
 class OsuIrc:
     username: str
@@ -53,28 +54,28 @@ class OsuIrc:
     def send_private(self, channel: str, message: str) -> bool:
         return self.send(f"PRIVMSG {channel} : {message}")
 
-    def message_generator(self) -> Generator[str | int, None, bool]:
+    def message_generator(self) -> Generator[str | MESSAGE_YIELD, None, bool]:
         """generate live user messages"""
-    
+
         buffer = ""
 
         while self.is_running:
             if not self.is_connected:
                 reconnected = self.connect()
-                
+
                 if reconnected:
-                    yield MESSAGE_YIELD['RECONNECTED']
+                    yield MESSAGE_YIELD.RECONNECTED
                 else:
-                    yield MESSAGE_YIELD['RECONECTION_FAILED']
+                    yield MESSAGE_YIELD.RECONECTION_FAILED
 
                 continue
-            
+
             try:
                 message = self.receive()
             except Exception:
                 print(f"Connection has been lost. Receive error")
                 self.disconnect()
-                yield MESSAGE_YIELD['DISCONNECTED']
+                yield MESSAGE_YIELD.DISCONNECT
                 continue
 
             if message:
@@ -83,10 +84,10 @@ class OsuIrc:
 
                 for _message in messages[0:-1]:
                     yield _message
-                
+
                 continue
-            
-            yield MESSAGE_YIELD['DISCONNECTED']
+
+            yield MESSAGE_YIELD.DISCONNECT
             self.disconnect()
             print("Connection has been lost. 0 byte message")
 

@@ -2,6 +2,7 @@ import json
 from irc import OsuIrc
 from roombot import Room, RoomBot
 from beatmaps import RoomBeatmap
+from constants import BOT_MODE, TEAM_MODE, SCORE_MODE, PLAY_MODE
 
 with open("config.json", "r") as f:
     configuration = json.loads(f.read())
@@ -35,17 +36,20 @@ room_bot = RoomBot(irc=irc)
 room_bot.add_room(
     Room(
         irc=irc,
-        name="5.0 - 6.0* | AR9+ | 0-5Mins | Auto Host Rotate",
-        password="",
-        bot_mode=0,
+        # name="5.0 - 6.0* | AR9+ | 0-5Mins | Auto Host Rotate",
+        name="testing",
+        password="test",
+        bot_mode=BOT_MODE.AUTO_HOST,
+        team_mode=TEAM_MODE.HEAD_TO_HEAD,
+        score_mode=SCORE_MODE.SCORE,
+        play_mode=PLAY_MODE.OSU,
         room_size=12,
-        team_mode=0,
         beatmap=RoomBeatmap(
             ar=(9.00, 10.00),
             star=(5.0, 6.0),
             length=(0, 300),
             bpm=(0, 500),
-        )
+        ),
     )
 )
 

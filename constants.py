@@ -1,18 +1,38 @@
 from typing import Literal
+from enum import Enum
 
 
+class TEAM_MODE(Enum):
+    HEAD_TO_HEAD = ("HeadToHead", 0)
+    TAG_COOP = ("TagCoop", 1)
+    TEAM_VS = ("TeamVs", 2)
+    TAG_VS = ("TagTeamVs", 3)
 
-TEAM_MODE = {0: "HeadToHead", 1: "TagCoop", 2: "TeamVs", 3: "TagTeamVs"}
-TEAM_MODE_T = Literal[0, 1, 2, 3]
 
-SCORE_MODE = {0: "Score", 1: "Accuracy", 2: "Combo", 3: "ScoreV2"}
-SCORE_MODE_T = Literal[0, 1, 2, 3]
+class SCORE_MODE(Enum):
+    SCORE = ("Score", 0)
+    ACCURACY = ("Accuracy", 1)
+    COMBO = ("Combo", 2)
+    SCORE_V2 = ("ScoreV2", 3)
 
-PLAY_MODE = {0: "osu!", 1: "Taiko", 2: "Catch the Beat", 3: "osu!Mania"}
-PLAY_MODE_T = Literal[0, 1, 2, 3]
 
-BOT_MODE = {0: "AutoHost", 1: "AutoRotateMap"}
-BOT_MODE_T = Literal[0, 1]
+class PLAY_MODE(Enum):
+    OSU = ("osu!", 0)
+    TAIKO = ("Taiko", 1)
+    CATCH_THE_BEAT = ("Catch the Beat", 2)
+    MANIA = ("osu!Mania", 3)
+
+
+class BOT_MODE(Enum):
+    AUTO_HOST = "AutoHost"
+    AUTO_ROTATE_MAP = "AutoRotateMap"
+
+
+class MESSAGE_YIELD(Enum):
+    DISCONNECT = "DISCONNECT"
+    RECONECTION_FAILED = "RECONECTION_FAILED"
+    RECONNECTED = "RECONNECTED"
+
 
 VALID_ROLES = [
     "Host",
@@ -28,9 +48,3 @@ VALID_ROLES = [
     "Relax",
     "Relax2",
 ]
-
-MESSAGE_YIELD = {
-    'DISCONNECTED': -1,
-    'RECONECTION_FAILED': -2,
-    'RECONNECTED': -3,
-}
