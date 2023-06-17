@@ -1,5 +1,7 @@
-from dataclasses import dataclass
 import socket
+import threading
+import time
+from dataclasses import dataclass, field
 from typing import Generator
 from constants import MESSAGE_YIELD
 
@@ -13,6 +15,11 @@ class OsuIrc:
     irc_socket: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     is_running: bool = False
     is_connected: bool = False
+    last_sent: float = 0.0
+    send_cooldown_per_second = 0.6  #! 10 message per 5 seconds
+
+    message_lists: list[str] = field(default_factory=list)
+    sender_thread: threading.Thread | None = None
 
     def connect(self, timeout: float = 10.0) -> bool:
         print(f"Connecting to {self.host}:{self.port}...")
@@ -23,8 +30,8 @@ class OsuIrc:
             self.irc_socket.connect((self.host, self.port))
             print("Connected!")
             self.is_connected = True
-            self.send(f"PASS {self.password}")
-            self.send(f"NICK {self.username}")
+            self.direct_send(f"PASS {self.password}")
+            self.direct_send(f"NICK {self.username}")
         except TimeoutError:
             self.is_connected = False
             print("~ Timeout Error!")
@@ -45,10 +52,28 @@ class OsuIrc:
     def receive(self, size: int = 2048) -> str:
         return self.irc_socket.recv(size).decode()
 
-    def send(self, message: str) -> bool:
+    def run_sender(self) -> None:
+        while self.is_running:
+            if not self.message_lists or not self.is_connected:
+                continue
+
+            message = self.message_lists[0]
+            self.message_lists.pop(0)
+            self.direct_send(message)
+
+            if self.send_cooldown_per_second < 0.5:
+                time.sleep(1)
+                print("SEND COOLDOWN TO 1 PER SEC")
+            else:
+                print("SEND COOLDOWN PER SEC: ", self.send_cooldown_per_second)
+                time.sleep(self.send_cooldown_per_second)
+
+    def direct_send(self, message: str) -> None:
         print(f"send: {message}")
-        if self.is_connected:
-            self.irc_socket.send(f"{message}\n".encode())
+        self.irc_socket.send(f"{message}\n".encode())
+
+    def send(self, message: str) -> bool:
+        self.message_lists.append(message)
         return self.is_connected
 
     def send_private(self, channel: str, message: str) -> bool:
@@ -95,8 +120,15 @@ class OsuIrc:
 
     def start(self) -> None:
         self.is_running = True
+
+        self.sender_thread = threading.Thread(target=self.run_sender, args=())
+        self.sender_thread.start()
+
         self.connect()
 
     def stop(self) -> None:
         self.is_running = False
         self.disconnect()
+
+        if self.sender_thread:
+            self.sender_thread.join()
