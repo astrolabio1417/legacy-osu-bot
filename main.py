@@ -15,24 +15,27 @@ irc = OsuIrc(
     password=configuration.get("password"),
 )
 room_bot = RoomBot(irc=irc)
-# room_bot.add_room(
-#     Room(
-#         irc=irc,
-#         name="5.5-6.5* | AR9+ | JP songs | Auto Map Rotate",
-#         password="",
-#         bot_mode=1,
-#         team_mode=0,
-#         room_size=12,
-#         beatmap=RoomBeatmap(
-#             ar=(9.00, 10.00),
-#             star=(5.5, 6.5),
-#             length=(120, 240),
-#             bpm=(0, 500),
-#             asset_filename="list-std-ranked-jp.json",
-#         )
-#     )
-# )
 
+###
+### start add room here
+###
+room_bot.add_room(
+    Room(
+        irc=irc,
+        name="testing 5.5-6.5* | AR9+ | JP songs | Auto Map Rotate",
+        password="test",
+        bot_mode=BOT_MODE.AUTO_ROTATE_MAP,
+        team_mode=TEAM_MODE.HEAD_TO_HEAD,
+        room_size=12,
+        beatmap=RoomBeatmap(
+            ar=(9.00, 10.00),
+            star=(5.5, 6.5),
+            length=(120, 240),
+            bpm=(0, 500),
+            asset_filename="list-std-ranked-jp.json",
+        ),
+    )
+)
 room_bot.add_room(
     Room(
         irc=irc,
@@ -52,6 +55,10 @@ room_bot.add_room(
         ),
     )
 )
+
+###
+### end add room
+###
 
 try:
     room_bot.start()

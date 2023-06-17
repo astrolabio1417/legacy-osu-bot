@@ -43,6 +43,47 @@
 ```
 
 -   edit main.js
+-   add room sample
+
+```
+    # auto host
+    room_bot.add_room(
+        Room(
+            irc=irc,
+            name="testing",
+            password="test",
+            bot_mode=BOT_MODE.AUTO_HOST,
+            team_mode=TEAM_MODE.HEAD_TO_HEAD,
+            score_mode=SCORE_MODE.SCORE,
+            play_mode=PLAY_MODE.OSU,
+            room_size=12,
+            beatmap=RoomBeatmap(
+                ar=(9.00, 10.00),
+                star=(5.0, 6.0),
+                length=(0, 300),
+                bpm=(0, 500),
+            ),
+        )
+    )
+
+    # auto rotate map
+    Room(
+        irc=irc,
+        name="testing 5.5-6.5* | AR9+ | JP songs | Auto Map Rotate",
+        password="test",
+        bot_mode=BOT_MODE.AUTO_ROTATE_MAP,
+        team_mode=TEAM_MODE.HEAD_TO_HEAD,
+        room_size=12,
+        beatmap=RoomBeatmap(
+            ar=(9.00, 10.00),
+            star=(5.5, 6.5),
+            length=(120, 240),
+            bpm=(0, 500),
+            asset_filename="list-std-ranked-jp.json",
+        ),
+    )
+```
+
 -   run the app
 
 ```
