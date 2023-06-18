@@ -1,13 +1,11 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Literal
 import re
+from typing import TYPE_CHECKING, Optional
 from dataclasses import dataclass, field
 from parsers import parse_message, parse_slot, parse_username
 from beatmaps import message_beatmap_links, RoomBeatmap
-from constants import BOT_MODE, PLAY_MODE, SCORE_MODE, TEAM_MODE
 from counter import Counter
-from constants import MESSAGE_YIELD
-
+from bot_enums import MESSAGE_YIELD, PLAY_MODE, TEAM_MODE, SCORE_MODE, BOT_MODE
 
 if TYPE_CHECKING:
     from irc import OsuIrc
@@ -66,9 +64,10 @@ class Room:
                 raise ValueError(f"{name} is invalid.")
 
         if self.bot_mode == BOT_MODE.AUTO_ROTATE_MAP:
-            self.beatmap.load_beatmaps(
-                self.beatmap.asset_filename, self.play_mode.value[1]
-            )
+            self.beatmap.load_beatmaps(self.play_mode.value[1])
+
+        if self.bot_mode == BOT_MODE.AUTO_HOST and not self.beatmap.current:
+            self.beatmap.init_current(self.play_mode.value[1])
 
     def on_count(self, count: int) -> int:
         print(f"count {count}")
@@ -139,6 +138,9 @@ class Room:
         self.setup()
         self.rotate()
 
+        if self.bot_mode == BOT_MODE.AUTO_HOST and self.beatmap.current:
+            self.rotate_beatmap()
+
     def close(self) -> None:
         print(f"Close the match {self.name} {self.room_id}")
         self.closed = True
@@ -180,11 +182,13 @@ class Room:
         if not self.beatmap.lists:
             return
 
-        self.irc.send_private(
-            self.room_id,
-            f"!mp map {self.beatmap.get_first().get('beatmap_id', 0)} {self.play_mode.value[1]}",
-        )
+        self.set_map(self.beatmap.get_first().get("id", 0))
         self.beatmap.rotate()
+
+    def set_map(self, beatmap_id: int) -> None:
+        self.irc.send_private(
+            self.room_id, f"!mp map {beatmap_id} {self.play_mode.value[1]}"
+        )
 
     def add_user(self, username: str) -> None:
         username = parse_username(username)
@@ -248,22 +252,55 @@ class Room:
         url: str,
         beatmap_id: int,
     ) -> None:
-        print(f"{self.room_id}: Beatmap change to {title} {url}")
+        print(f"{self.room_id}: Beatmap change to {title} {url} {beatmap_id}")
+
+        if beatmap_id == self.beatmap.current:
+            return
+
         self.irc.send_private(
             self.room_id,
-            f"!mp map {beatmap_id} {self.play_mode.value[1]}",
+            f"!mp map {beatmap_id if beatmap_id else self.beatmap.current} {self.play_mode.value[1]}",
         )
 
     def on_changed_beatmap_to(self, title: str, url: str, beatmap_id: int) -> None:
         print(f"{self.room_id}: Change beatmap to {title} {url}")
+
+        if beatmap_id == self.beatmap.current:
+            return
+
         self.skips = []
 
-        beatmap_id = self.beatmap.check_beatmap(url)
+        print(f"~ CURRENT BEATMAP ", self.beatmap.current)
+        bm = self.beatmap.get_beatmap(url, beatmap_id)
 
-        if beatmap_id:
+        if not bm:
+            # no beatmap found
+            self.irc.send_private(self.room_id, "Beatmap Fetch Error")
+            return
+
+        beatmapset, beatmap = bm
+
+        if self.beatmap.force_stat and self.beatmap.current:
+            errors = self.beatmap.check_beatmap(beatmap)
+
+            if beatmap.get("mode_int") != self.play_mode.value[1]:
+                errors.append(("Play Mode"))
+
+            if errors:
+                self.irc.send_private(
+                    self.room_id,
+                    f"!mp map {self.beatmap.current} {self.play_mode.value[1]} | Rule Violations: {', '.join(errors)}",
+                )
+                return
+
+        self.beatmap.current = beatmap_id
+        beatmapset_id = beatmapset.get("id", 0)
+        self.beatmap.current_set = beatmapset.get("id", self.beatmap.current_set)
+
+        if beatmapset_id:
             self.irc.send_private(
                 self.room_id,
-                f"Alternative Links: {message_beatmap_links(title, beatmap_id)}",
+                f"Alternative Links: {message_beatmap_links(title, beatmapset_id)}",
             )
 
     def on_slot(
@@ -341,7 +378,7 @@ class Room:
     def send_beatmap_alt(self) -> None:
         self.irc.send_private(
             self.room_id,
-            f"Alternative Links: {message_beatmap_links('osu.ppy.sh', self.beatmap.current)}",
+            f"Alternative Links: {message_beatmap_links('osu.ppy.sh', self.beatmap.current_set)}",
         )
 
     def on_message_receive(self, sender: str, message: str) -> None:

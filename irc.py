@@ -3,7 +3,8 @@ import threading
 import time
 from dataclasses import dataclass, field
 from typing import Generator
-from constants import MESSAGE_YIELD
+
+from bot_enums import MESSAGE_YIELD
 
 
 @dataclass
@@ -22,13 +23,13 @@ class OsuIrc:
     sender_thread: threading.Thread | None = None
 
     def connect(self, timeout: float = 10.0) -> bool:
-        print(f"Connecting to {self.host}:{self.port}...")
+        print(f"~ Connecting to {self.host}:{self.port}...")
         self.irc_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.irc_socket.settimeout(timeout)
 
         try:
             self.irc_socket.connect((self.host, self.port))
-            print("Connected!")
+            print("~ Connected!")
             self.is_connected = True
             self.direct_send(f"PASS {self.password}")
             self.direct_send(f"NICK {self.username}")
@@ -63,9 +64,9 @@ class OsuIrc:
 
             if self.send_cooldown_per_second < 0.5:
                 time.sleep(1)
-                print("SEND COOLDOWN TO 1 PER SEC")
+                print("~ SEND COOLDOWN TO 1 PER SEC")
             else:
-                print("SEND COOLDOWN PER SEC: ", self.send_cooldown_per_second)
+                print("~ SEND COOLDOWN PER SEC: ", self.send_cooldown_per_second)
                 time.sleep(self.send_cooldown_per_second)
 
     def direct_send(self, message: str) -> None:
@@ -98,7 +99,7 @@ class OsuIrc:
             try:
                 message = self.receive()
             except Exception:
-                print(f"Connection has been lost. Receive error")
+                print(f"~ Connection has been lost. Receive error")
                 self.disconnect()
                 yield MESSAGE_YIELD.DISCONNECT
                 continue
@@ -114,7 +115,7 @@ class OsuIrc:
 
             yield MESSAGE_YIELD.DISCONNECT
             self.disconnect()
-            print("Connection has been lost. 0 byte message")
+            print("~ Connection has been lost. 0 byte message")
 
         return False
 

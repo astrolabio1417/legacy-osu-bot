@@ -1,98 +1,81 @@
-from typing import TypedDict
+import random
 from dataclasses import dataclass, field
+from bot_typing import BeatmapDict, BeatmapSetDict
 from scraper import fetch_beatmap
-
-
-class RoomBeatmapDict(TypedDict):
-    beatmapset: int
-    beatmap_id: int
-    difficulty_name: str
-    beatmap_status: str
-    gamemode: int
-    title: str
-    difficulty_ar: float
-    difficulty_hp: float
-    bpm: int
-    play_length: int
-    difficulty_od: float
-    favorites: int
-    difficulty: float
-    difficulty_cs: float
-    pass_count: int
-    language: str
-    total_length: int
-    play_count: int
 
 
 @dataclass
 class RoomBeatmap:
     star: tuple[float, float] = (0.00, 10.00)
     ar: tuple[float, float] = (0.00, 10.00)
-    od: tuple[float, float] = (0.00, 10.00)
     cs: tuple[float, float] = (0.00, 10.00)
+    od: tuple[float, float] = (0.00, 10.00)
     length: tuple[int, int] = (0, 1000000)
     bpm: tuple[int, int] = (0, 200)
     current: int = 0
-    lists: list[RoomBeatmapDict] = field(default_factory=list)
-    asset_filename: str = "chimu-std-ranked-5to7star.json"
+    current_set: int = 0
+    lists: list[BeatmapDict] = field(default_factory=list)
+    asset_filename: str = "beatmaps-1.json"
     force_stat: bool = False
 
-    def load_beatmaps(self, filename: str, play_mode: int) -> list[RoomBeatmapDict]:
+    def __post_init__(self) -> None:
+        pass
+
+    def load_beatmaps(self, play_mode: int, max: int = 999999) -> list[BeatmapDict]:
         import json
 
-        with open(f"beatmapsets/{filename}", "r") as f:
+        with open(f"./datasets/{self.asset_filename}", "r") as f:
             try:
-                beatmaplist: list[RoomBeatmapDict] = json.loads(f.read())
+                beatmaplist: list[BeatmapDict] = json.loads(f.read())
             except json.decoder.JSONDecodeError:
                 return []
 
             if beatmaplist:
                 valid_beatmaps = []
+                random.shuffle(beatmaplist)
 
                 for beatmap in beatmaplist:
-                    if not beatmap.get("beatmap_id", False):
-                        print(beatmap.get("beatmap_id"))
+                    if not beatmap.get("id", False):
                         continue
 
-                    play_mode = beatmap.get("gamemode", -1) == play_mode
-                    ar = (
-                        beatmap.get("difficulty_ar", 0.00) >= self.ar[0]
-                        and beatmap.get("difficulty_ar", 0.00) <= self.ar[1]
-                    )
-                    star = (
-                        beatmap.get("difficulty", 0.00) >= self.star[0]
-                        and beatmap.get("difficulty", 0.00) <= self.star[1]
-                    )
-                    length = (
-                        beatmap.get("total_length", 0) >= self.length[0]
-                        and beatmap.get("total_length", 0) <= self.length[1]
-                    )
-                    bpm = beatmap.get("bpm", 0) >= self.bpm[0] and beatmap.get(
-                        "bpm", 0
-                    ) <= beatmap.get("bpm", 0)
+                    play_mode = beatmap.get("mode_int", -1) == play_mode
+                    ar = self.check_ar(beatmap.get("ar", 0.00))
+                    star = self.check_star(beatmap.get("difficulty_rating", 0.00))
+                    length = self.check_length(beatmap.get("total_length", 0))
+                    bpm = self.check_bpm(beatmap.get("bpm", 0))
 
                     if play_mode and ar and star and length and bpm:
                         valid_beatmaps.append(beatmap)
 
-                import random
+                        if len(valid_beatmaps) >= max:
+                            break
 
-                random.shuffle(valid_beatmaps)
                 print(f"{len(valid_beatmaps)} Total beatmaps!")
                 self.lists = valid_beatmaps
                 return self.lists
 
         return []
 
+    def init_current(self, play_mode: int) -> BeatmapDict | None:
+        self.load_beatmaps(play_mode, max=1)
+
+        if not self.lists:
+            return None
+
+        self.current = self.lists[0].get("id", 0)
+        self.current_set = self.lists[0].get("beatmapset_id", 0)
+        return self.lists[0]
+
     def rotate(self) -> None:
         self.lists = self.lists[1:] + self.lists[0:1]
 
-    def get_first(self) -> RoomBeatmapDict:
+    def get_first(self) -> BeatmapDict:
         return self.lists[0]
 
     def get_queue(self) -> str:
         return ", ".join(
             [
-                f"[https://osu.ppy.sh/b/{beatmap.get('beatmap_id', 0)} {beatmap.get('title', 'no_title')}]"
+                f"[https://osu.ppy.sh/beatmapsets/{beatmap.get('beatmapset_id', 0)} {beatmap.get('title', 'no_title')} - {beatmap.get('difficulty_title', '?')}]"
                 for beatmap in self.lists[0:5]
             ]
         )
@@ -114,22 +97,51 @@ class RoomBeatmap:
     def check_length(self, length: int) -> bool:
         return self.check_is_in_range(length, self.length[0], self.length[1])
 
-    def check_beatmap(self, url: str) -> int:
-        beatmap = fetch_beatmap(url=url)
+    def check_od(self, od: float) -> bool:
+        return self.check_is_in_range(od, self.od[0], self.od[1])
+
+    def get_beatmap(
+        self, url: str, beatmap_id: int
+    ) -> tuple[BeatmapSetDict, BeatmapDict] | None:
+        beatmapset = fetch_beatmap(url=url)
+
+        if not beatmapset:
+            return None
+
+        for bm in beatmapset.get("beatmaps", []):
+            if bm.get("id") == beatmap_id:
+                return (beatmapset, bm)
+
+        return None
+
+    def check_beatmap(self, beatmap: BeatmapDict) -> list[str]:
+        """return errors"""
+        errors: list[str] = []
+
+        if not beatmap:
+            return False
 
         if beatmap:
-            beatmapset_id = beatmap.get("id", self.current)
+            star = self.check_star(beatmap.get("difficulty_rating", 0))
+            ar = self.check_ar(beatmap.get("ar", 0))
+            bpm = self.check_bpm(beatmap.get("bpm", 0))
+            length = self.check_length(beatmap.get("total_length", 0))
 
-            # if self.force_stat:
-            #     if not self.check_star(beatmap.get("ratings", 0)):
-            #         # todo
-            #         return self.current
+            print("star: ", star)
+            print("ar: ", ar)
+            print("bpm: ", bpm)
+            print("length: ", length)
 
-            #     return self.current
+            for name, value in [
+                ("Star", star),
+                ("AR", ar),
+                ("BPM", bpm),
+                ("Length", length),
+            ]:
+                if not value:
+                    errors.append(name)
 
-            self.current = beatmapset_id if type(beatmapset_id) == int else self.current
-
-        return self.current
+        return errors
 
 
 def message_beatmap_links(title: str, beatmap_id: int) -> str:
