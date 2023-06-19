@@ -89,3 +89,277 @@
 ```
 py main.js
 ```
+
+-   run the backend
+
+```
+flask run
+```
+
+# REST API
+
+The REST API to the example app is described below.
+
+## Get list of Room
+
+### Request
+
+`GET /room/`
+
+    curl -i -H 'Accept: application/json' http://localhost:5000/room/
+
+### Response
+
+    HTTP/1.1 200 OK
+    Status: 200 OK
+    Content-Type: application/json
+
+
+    {
+        "lists": [
+            {
+                "beatmap": {
+                    "ar": [
+                        9.0,
+                        10.0
+                    ],
+                    "bpm": [
+                        0,
+                        200
+                    ],
+                    "cs": [
+                        0.0,
+                        10.0
+                    ],
+                    "current": 2201963,
+                    "current_set": 1053771,
+                    "force_stat": true,
+                    "length": [
+                        60,
+                        150
+                    ],
+                    "od": [
+                        0.0,
+                        10.0
+                    ],
+                    "star": [
+                        5.0,
+                        6.0
+                    ]
+                },
+                "bot_mode": {
+                    "name": "AUTO_HOST",
+                    "value": "AutoHost"
+                },
+                "is_closed": false,
+                "is_configured": true,
+                "is_connected": false,
+                "is_created": true,
+                "name": "Testing Room 1",
+                "play_mode": {
+                    "name": "OSU",
+                    "value": [
+                        "osu!",
+                        0
+                    ]
+                },
+                "room_id": "#mp_109084008",
+                "room_size": 16,
+                "score_mode": {
+                    "name": "SCORE",
+                    "value": [
+                        "Score",
+                        0
+                    ]
+                },
+                "skips": [],
+                "team_mode": {
+                    "name": "HEAD_TO_HEAD",
+                    "value": [
+                        "HeadToHead",
+                        0
+                    ]
+                },
+                "users": [
+                    "rouel"
+                ]
+            }
+        ],
+        "message": "ok",
+        "status": 200
+    }
+
+## Create a new Room
+
+### Request
+
+`POST /room/`
+
+    curl -i -H 'Accept: application/json' -d 'name=testingroom&password=testing' http://localhost:5000/room/
+
+    {
+        "bot_mode": "AUTO_HOST" | "AUTO_ROTATE_MAP",
+        "play_mode": "OSU" | "TAIKO" | "CATCH_THE_BEAT" | "MANIA",
+        "team_mode": "HEAD_TO_HEAD" | "TAG_COOP" | "TEAM_VS" | "TAG_VS",
+        "score_mode": "SCORE" | "ACCURACY" | "COMBO" | "SCORE_V2",
+        "room_size": int,
+        "name": string required,
+        "password": string,
+        "beatmap": {
+            "star": [float, float],
+            "cs": [float, float],
+            "od": [float, float],
+            "ar": [float, float],
+            "length": [int, int],
+            "bpm": [int, int],
+            "current": int,
+            "current_set": int,
+            "force_stat": bool
+        }
+    }
+
+### Response
+
+    HTTP/1.1 201 Created
+    Status: 201 Created
+    Content-Type: application/json
+
+    {
+        "message": "Room has been created!",
+        "status": 201
+    }
+
+## Get a specific Room
+
+### Request
+
+`GET /room/:room_id`
+
+    curl -i -H 'Accept: application/json' http://localhost:5000/room/mp_999999
+
+### Response
+
+    HTTP/1.1 200 OK
+    Status: 200 OK
+    Content-Type: application/json
+
+     {
+        "beatmap": {
+            "ar": [
+                9.0,
+                10.0
+            ],
+            "bpm": [
+                0,
+                200
+            ],
+            "cs": [
+                0.0,
+                10.0
+            ],
+            "current": 2201963,
+            "current_set": 1053771,
+            "force_stat": true,
+            "length": [
+                60,
+                150
+            ],
+            "od": [
+                0.0,
+                10.0
+            ],
+            "star": [
+                5.0,
+                6.0
+            ]
+        },
+        "bot_mode": {
+            "name": "AUTO_HOST",
+            "value": "AutoHost"
+        },
+        "is_closed": false,
+        "is_configured": true,
+        "is_connected": false,
+        "is_created": true,
+        "name": "Testing Room 1",
+        "play_mode": {
+            "name": "OSU",
+            "value": [
+                "osu!",
+                0
+            ]
+        },
+        "room_id": "#mp_109084008",
+        "room_size": 16,
+        "score_mode": {
+            "name": "SCORE",
+            "value": [
+                "Score",
+                0
+            ]
+        },
+        "skips": [],
+        "team_mode": {
+            "name": "HEAD_TO_HEAD",
+            "value": [
+                "HeadToHead",
+                0
+            ]
+        },
+        "users": [
+            "rouel"
+        ]
+    }
+
+## Change a room's state
+
+### Request
+
+`PUT /room/:room_id/`
+
+    curl -i -H 'Accept: application/json' -X PUT http://localhost:5000/room/mp_99999/
+
+     {
+        "bot_mode": "AUTO_HOST" | "AUTO_ROTATE_MAP",
+        "play_mode": "OSU" | "TAIKO" | "CATCH_THE_BEAT" | "MANIA",
+        "team_mode": "HEAD_TO_HEAD" | "TAG_COOP" | "TEAM_VS" | "TAG_VS",
+        "score_mode": "SCORE" | "ACCURACY" | "COMBO" | "SCORE_V2",
+        "room_size": int,
+        "name": string required,
+        "password": string,
+        "beatmap": {
+            "star": [float, float],
+            "cs": [float, float],
+            "od": [float, float],
+            "ar": [float, float],
+            "length": [int, int],
+            "bpm": [int, int],
+            "current": int,
+            "current_set": int,
+            "force_stat": bool
+        }
+    }
+
+### Response
+
+    HTTP/1.1 200 OK
+    Status: 200 OK
+    Content-Type: application/json
+
+    {
+        "message": "Room has been updated!",
+        "status": 200
+    }
+
+## Delete a Room
+
+### Request
+
+`DELETE /room/:room_id`
+
+    curl -i -H 'Accept: application/json' -X DELETE http://localhost:5000/room/mp_999999/
+
+### Response
+
+    HTTP/1.1 204 No Content
+    Status: 204 No Content

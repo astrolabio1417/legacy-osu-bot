@@ -106,7 +106,7 @@ def delete_room(room_id: str) -> tuple[dict[str, Any], int]:
 
     room.close()
 
-    return {"status": 200, "message": "Room has been closed!"}, 200
+    return {"status": 200, "message": "Room has been closed!"}, 204
 
 
 @app.route("/")
