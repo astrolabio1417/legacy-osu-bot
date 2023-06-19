@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, IntEnum
 
 
 class TEAM_MODE(Enum):
@@ -33,7 +33,7 @@ class MESSAGE_YIELD(Enum):
     RECONNECTED = "RECONNECTED"
 
 
-class RANK_STATUS(Enum):
+class RANK_STATUS(IntEnum):
     RANKED = 1
     APPROVED = 2
     QUALIFIED = 3
@@ -43,7 +43,7 @@ class RANK_STATUS(Enum):
     GRAVEYARD = -2
 
 
-class CHIMU_GENRE(Enum):
+class CHIMU_GENRE(IntEnum):
     GAME = 2
     ANIME = 3
     ROCK = 4
@@ -54,7 +54,7 @@ class CHIMU_GENRE(Enum):
     ELECTRONIC = 10
 
 
-class CHIMU_LANGUAGE(Enum):
+class CHIMU_LANGUAGE(IntEnum):
     ENGLISH = 2
     JAPANESE = 3
     CHINESE = 4
