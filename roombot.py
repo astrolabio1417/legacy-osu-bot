@@ -520,7 +520,7 @@ class RoomBot:
 
     def get_room(self, name: str = "", room_id: str = "") -> Optional[Room]:
         for room in self.rooms:
-            if name == room.name or room_id == room.room_id:
+            if name == room.name or (room_id and room_id == room.room_id):
                 return room
         return None
 
