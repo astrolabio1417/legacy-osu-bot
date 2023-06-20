@@ -131,8 +131,8 @@ The REST API to the example app is described below.
                         0.0,
                         10.0
                     ],
-                    "current": 2201963,
-                    "current_set": 1053771,
+                    "current": 3107913,
+                    "current_set": 1518223,
                     "force_stat": true,
                     "length": [
                         60,
@@ -147,39 +147,18 @@ The REST API to the example app is described below.
                         6.0
                     ]
                 },
-                "bot_mode": {
-                    "name": "AUTO_HOST",
-                    "value": "AutoHost"
-                },
+                "bot_mode": "AUTO_HOST",
                 "is_closed": false,
                 "is_configured": true,
-                "is_connected": false,
+                "is_connected": true,
                 "is_created": true,
                 "name": "Testing Room 1",
-                "play_mode": {
-                    "name": "OSU",
-                    "value": [
-                        "osu!",
-                        0
-                    ]
-                },
-                "room_id": "#mp_109084008",
+                "play_mode": "OSU",
+                "room_id": "#mp_109095678",
                 "room_size": 16,
-                "score_mode": {
-                    "name": "SCORE",
-                    "value": [
-                        "Score",
-                        0
-                    ]
-                },
+                "score_mode": "SCORE",
                 "skips": [],
-                "team_mode": {
-                    "name": "HEAD_TO_HEAD",
-                    "value": [
-                        "HeadToHead",
-                        0
-                    ]
-                },
+                "team_mode": "HEAD_TO_HEAD",
                 "users": [
                     "rouel"
                 ]
@@ -243,7 +222,7 @@ The REST API to the example app is described below.
     Status: 200 OK
     Content-Type: application/json
 
-     {
+    {
         "beatmap": {
             "ar": [
                 9.0,
@@ -257,8 +236,8 @@ The REST API to the example app is described below.
                 0.0,
                 10.0
             ],
-            "current": 2201963,
-            "current_set": 1053771,
+            "current": 3107913,
+            "current_set": 1518223,
             "force_stat": true,
             "length": [
                 60,
@@ -273,39 +252,18 @@ The REST API to the example app is described below.
                 6.0
             ]
         },
-        "bot_mode": {
-            "name": "AUTO_HOST",
-            "value": "AutoHost"
-        },
+        "bot_mode": "AUTO_HOST",
         "is_closed": false,
         "is_configured": true,
-        "is_connected": false,
+        "is_connected": true,
         "is_created": true,
         "name": "Testing Room 1",
-        "play_mode": {
-            "name": "OSU",
-            "value": [
-                "osu!",
-                0
-            ]
-        },
-        "room_id": "#mp_109084008",
+        "play_mode": "OSU",
+        "room_id": "#mp_109095678",
         "room_size": 16,
-        "score_mode": {
-            "name": "SCORE",
-            "value": [
-                "Score",
-                0
-            ]
-        },
+        "score_mode": "SCORE",
         "skips": [],
-        "team_mode": {
-            "name": "HEAD_TO_HEAD",
-            "value": [
-                "HeadToHead",
-                0
-            ]
-        },
+        "team_mode": "HEAD_TO_HEAD",
         "users": [
             "rouel"
         ]

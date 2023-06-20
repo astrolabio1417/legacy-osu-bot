@@ -8,8 +8,10 @@ from roombot import Room, RoomBot
 from beatmaps import RoomBeatmap
 from bot_enums import BOT_MODE, TEAM_MODE, SCORE_MODE, PLAY_MODE
 from roombot import Room
+from flask_cors import CORS
 
 app = Flask(__name__)
+cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 with open("config.json", "r") as f:
     configuration = json.loads(f.read())

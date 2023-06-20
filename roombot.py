@@ -64,30 +64,27 @@ class Room:
                 raise ValueError(f"{name} is invalid.")
 
         if self.bot_mode == BOT_MODE.AUTO_ROTATE_MAP:
-            self.beatmap.load_beatmaps(self.play_mode.value[1])
+            self.beatmap.load_beatmaps(self.play_mode.value)
 
         if self.bot_mode == BOT_MODE.AUTO_HOST and not self.beatmap.current:
-            self.beatmap.init_current(self.play_mode.value[1])
+            self.beatmap.init_current(self.play_mode.value)
 
     def get_json(self) -> dict[str, Any]:
         return {
             "name": self.name,
-            "is_closed": self.closed,
-            "bot_mode": {"name": self.bot_mode.name, "value": self.bot_mode.value},
-            "play_mode": {"name": self.play_mode.name, "value": self.play_mode.value},
-            "team_mode": {"name": self.team_mode.name, "value": self.team_mode.value},
-            "score_mode": {
-                "name": self.score_mode.name,
-                "value": self.score_mode.value,
-            },
-            "room_size": self.room_size,
-            "users": self.users,
             "room_id": self.room_id,
-            "beatmap": self.beatmap.get_json(),
+            "is_closed": self.closed,
+            "bot_mode": self.bot_mode.name,
+            "play_mode": self.play_mode.name,
+            "team_mode": self.team_mode.name,
+            "score_mode": self.score_mode.name,
+            "room_size": self.room_size,
             "is_connected": self.__connected,
             "is_created": self.__created,
             "is_configured": self.__configured,
+            "users": self.users,
             "skips": self.skips,
+            "beatmap": self.beatmap.get_json(),
         }
 
     def on_count(self, count: int) -> int:
@@ -182,6 +179,7 @@ class Room:
         self.room_id = room_id
         print(f"Room Created {self.room_id} {self.name}")
         self.irc.send_private(self.room_id, f"JOIN {self.room_id}")
+        self.__connected = True
         self.setup()
         self.rotate()
 
@@ -205,7 +203,7 @@ class Room:
         messages = [
             f"!mp name {self.name}",
             f"!mp password {self.password}",
-            f"!mp set {self.team_mode.value[1]} {self.score_mode.value[1]} {self.room_size}",
+            f"!mp set {self.team_mode.value} {self.score_mode.value} {self.room_size}",
             "!mp mods Freemod",
         ]
 
@@ -235,7 +233,7 @@ class Room:
 
     def set_map(self, beatmap_id: int) -> None:
         self.irc.send_private(
-            self.room_id, f"!mp map {beatmap_id} {self.play_mode.value[1]}"
+            self.room_id, f"!mp map {beatmap_id} {self.play_mode.value}"
         )
 
     def add_user(self, username: str) -> None:
@@ -307,7 +305,7 @@ class Room:
 
         self.irc.send_private(
             self.room_id,
-            f"!mp map {beatmap_id if beatmap_id else self.beatmap.current} {self.play_mode.value[1]}",
+            f"!mp map {beatmap_id if beatmap_id else self.beatmap.current} {self.play_mode.value}",
         )
 
     def on_changed_beatmap_to(self, title: str, url: str, beatmap_id: int) -> None:
@@ -331,13 +329,13 @@ class Room:
         if self.beatmap.force_stat and self.beatmap.current:
             errors = self.beatmap.check_beatmap(beatmap)
 
-            if beatmap.get("mode_int") != self.play_mode.value[1]:
+            if beatmap.get("mode_int") != self.play_mode.value:
                 errors.append(("Play Mode"))
 
             if errors:
                 self.irc.send_private(
                     self.room_id,
-                    f"!mp map {self.beatmap.current} {self.play_mode.value[1]} | Rule Violations: {', '.join(errors)}",
+                    f"!mp map {self.beatmap.current} {self.play_mode.value} | Rule Violations: {', '.join(errors)}",
                 )
                 return
 
