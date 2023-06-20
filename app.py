@@ -1,3 +1,4 @@
+from enum import Enum
 import json
 from typing import Any
 from flask import Flask, request
@@ -63,7 +64,7 @@ def enum_parser(data: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
-def create_room(data: Any) -> dict[str, Any]:
+def create_room(data: Any) -> tuple[dict[str, Any], int]:
     beatmap = data.pop("beatmap", {})
 
     convert_to_tuples(beatmap)
@@ -71,9 +72,14 @@ def create_room(data: Any) -> dict[str, Any]:
 
     data["irc"] = irc
     data["beatmap"] = RoomBeatmap(**beatmap)
-    room_bot.add_room(Room(**data)).create()
+    new_room = room_bot.add_room(Room(**data))
 
-    return {"message": "Room has been created!", "status": 201}
+    if not new_room:
+        return {"message": "Duplicate title"}, 400
+
+    new_room.create()
+
+    return {"message": "Room has been created!"}, 201
 
 
 def update_room(room_id: str, data: Any) -> tuple[dict[str, Any], int]:
@@ -122,7 +128,7 @@ def room() -> Any:
         return {"lists": room_bot.get_rooms_json(), "status": 200, "message": "ok"}, 200
 
     if request.method == "POST":
-        return create_room(request.get_json()), 201
+        return create_room(request.get_json())
 
     return {"status": 400, "message": "Wrong Method!"}, 400
 
@@ -156,5 +162,5 @@ def bot_enums() -> Any:
     }
 
 
-def extract_enum(e: Any) -> list[dict[str, Any]]:
-    return [{"name": a.name, "value": a.value} for a in e]
+def extract_enum(e: Any) -> list[str]:
+    return [a.name for a in e]

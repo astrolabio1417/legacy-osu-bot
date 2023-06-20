@@ -14,9 +14,9 @@ if TYPE_CHECKING:
 @dataclass
 class Room:
     irc: OsuIrc
-    name: str = "yeet"
+    name: str = "test room"
     room_id: str = ""
-    password: str = "test"
+    password: str = ""
     closed: bool = False
 
     bot_mode: BOT_MODE = BOT_MODE.AUTO_HOST
@@ -524,10 +524,10 @@ class RoomBot:
                 return room
         return None
 
-    def add_room(self, room: Room) -> Room:
+    def add_room(self, room: Room) -> Optional[Room]:
         for _room in self.rooms:
             if _room.name == room.name:
-                return _room
+                return None
 
         self.rooms.append(room)
         return room
