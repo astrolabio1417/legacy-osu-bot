@@ -261,41 +261,42 @@ The REST API to the example app is described below.
     {
         "beatmap": {
             "ar": [
-                9.0,
-                10.0
+            9,
+            10
             ],
             "bpm": [
-                0,
-                200
+            0,
+            200
             ],
             "cs": [
-                0.0,
-                10.0
+            0,
+            10
             ],
-            "current": 3107913,
-            "current_set": 1518223,
-            "force_stat": true,
+            "current": 2229508,
+            "current_set": 1064829,
+            "force_stat": false,
             "length": [
-                60,
-                150
+            60,
+            1800
             ],
             "od": [
-                0.0,
-                10.0
+            0,
+            10
             ],
             "star": [
-                5.0,
-                6.0
+            5,
+            6.2
             ]
         },
-        "bot_mode": "AUTO_HOST",
+        "bot_mode": "AUTO_ROTATE_MAP",
+        "id": "9e1bfe1b-100c-11ee-a1bf-2cf05d88d3b7",
         "is_closed": false,
         "is_configured": true,
         "is_connected": true,
         "is_created": true,
-        "name": "Testing Room 1",
+        "name": "5-6.2* | AR9+ | Test Auto Map Rotation",
         "play_mode": "OSU",
-        "room_id": "#mp_109095678",
+        "room_id": "#mp_109111115",
         "room_size": 16,
         "score_mode": "SCORE",
         "skips": [],
