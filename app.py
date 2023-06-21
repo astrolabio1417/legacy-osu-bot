@@ -73,16 +73,12 @@ def create_room(data: Any) -> tuple[dict[str, Any], int]:
     data["irc"] = irc
     data["beatmap"] = RoomBeatmap(**beatmap)
     new_room = room_bot.add_room(Room(**data))
-
-    if not new_room:
-        return {"message": "Duplicate title"}, 400
-
     new_room.create()
 
-    return {"message": "Room has been created!"}, 201
+    return new_room.get_json(), 201
 
 
-def update_room(room_id: str, data: Any) -> tuple[dict[str, Any], int]:
+def update_room(unique_id: str, data: Any) -> tuple[dict[str, Any], int]:
     beatmap = data.pop("beatmap", {})
 
     convert_to_tuples(beatmap)
@@ -90,31 +86,31 @@ def update_room(room_id: str, data: Any) -> tuple[dict[str, Any], int]:
 
     data["beatmap"] = beatmap
 
-    if not room_id:
+    if not unique_id:
         return {"status": 400, "message": "Missing room_id on data"}, 400
 
-    room = room_bot.get_room(room_id=room_id)
+    room = room_bot.get_room(unique_id=unique_id)
 
     if not room:
         return {"status": 400, "message": "No room found!"}, 400
 
     room.setattrs(**data)
 
-    return {"status": 200, "message": "Room has been updated!"}, 200
+    return room.get_json(), 200
 
 
-def delete_room(room_id: str) -> tuple[dict[str, Any], int]:
-    if not room_id:
+def delete_room(room_unique_id: str) -> tuple[dict[str, Any], int]:
+    if not room_unique_id:
         return {"status": 400, "message": "Missing room_id on data"}, 400
 
-    room = room_bot.get_room(room_id=room_id)
+    room = room_bot.get_room(unique_id=room_unique_id)
 
     if not room:
         return {"status": 400, "message": "No room found!"}, 400
 
-    room.close()
+    room.send_close()
 
-    return {"status": 200, "message": "Room has been closed!"}, 204
+    return {"id": room_unique_id}, 204
 
 
 @app.route("/")
@@ -125,7 +121,7 @@ def hello_world() -> str:
 @app.route("/room", methods=["GET", "POST", "DELETE", "PUT"])
 def room() -> Any:
     if request.method == "GET":
-        return {"lists": room_bot.get_rooms_json(), "status": 200, "message": "ok"}, 200
+        return room_bot.get_rooms_json(), 200
 
     if request.method == "POST":
         return create_room(request.get_json())
@@ -133,10 +129,10 @@ def room() -> Any:
     return {"status": 400, "message": "Wrong Method!"}, 400
 
 
-@app.route("/room/<room_id>", methods=["GET", "PUT", "DELETE"])
-def room_view(room_id: str) -> Any:
+@app.route("/room/<room_unique_id>", methods=["GET", "PUT", "DELETE"])
+def room_view(room_unique_id: str) -> Any:
     if request.method == "GET":
-        room = room_bot.get_room(room_id=f"#{room_id}")
+        room = room_bot.get_room(unique_id=room_unique_id)
 
         if not room:
             return {"message": "No room found", "status": 400}, 400
@@ -144,12 +140,12 @@ def room_view(room_id: str) -> Any:
         return room.get_json(), 200
 
     if request.method == "PUT":
-        return update_room(f"#{room_id}", request.get_json())
+        return update_room(room_unique_id, request.get_json())
 
     if request.method == "DELETE":
-        return delete_room(f"#{room_id}")
+        return delete_room(room_unique_id)
 
-    return room_id
+    return {}, 400
 
 
 @app.route("/enums")

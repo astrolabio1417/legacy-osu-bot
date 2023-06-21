@@ -115,58 +115,53 @@ The REST API to the example app is described below.
     Content-Type: application/json
 
 
-    {
-        "lists": [
-            {
-                "beatmap": {
-                    "ar": [
-                        9.0,
-                        10.0
-                    ],
-                    "bpm": [
-                        0,
-                        200
-                    ],
-                    "cs": [
-                        0.0,
-                        10.0
-                    ],
-                    "current": 3107913,
-                    "current_set": 1518223,
-                    "force_stat": true,
-                    "length": [
-                        60,
-                        150
-                    ],
-                    "od": [
-                        0.0,
-                        10.0
-                    ],
-                    "star": [
-                        5.0,
-                        6.0
-                    ]
-                },
-                "bot_mode": "AUTO_HOST",
-                "is_closed": false,
-                "is_configured": true,
-                "is_connected": true,
-                "is_created": true,
-                "name": "Testing Room 1",
-                "play_mode": "OSU",
-                "room_id": "#mp_109095678",
-                "room_size": 16,
-                "score_mode": "SCORE",
-                "skips": [],
-                "team_mode": "HEAD_TO_HEAD",
-                "users": [
-                    "rouel"
-                ]
-            }
-        ],
-        "message": "ok",
-        "status": 200
-    }
+    [
+        {
+            "beatmap": {
+            "ar": [
+                0,
+                10
+            ],
+            "bpm": [
+                0,
+                200
+            ],
+            "cs": [
+                0,
+                10
+            ],
+            "current": 34604,
+            "current_set": 5561,
+            "force_stat": false,
+            "length": [
+                60,
+                180
+            ],
+            "od": [
+                0,
+                10
+            ],
+            "star": [
+                0,
+                10
+            ]
+            },
+            "bot_mode": "AUTO_HOST",
+            "id": "5c3903d7-100a-11ee-b66d-2cf05d88d3b7",
+            "is_closed": false,
+            "is_configured": true,
+            "is_connected": true,
+            "is_created": true,
+            "name": "test 1",
+            "play_mode": "OSU",
+            "room_id": "#mp_109110993",
+            "room_size": 16,
+            "score_mode": "SCORE",
+            "skips": [],
+            "team_mode": "HEAD_TO_HEAD",
+            "users": []
+        }
+    ]
 
 ## Create a new Room
 
@@ -204,8 +199,49 @@ The REST API to the example app is described below.
     Content-Type: application/json
 
     {
-        "message": "Room has been created!",
-        "status": 201
+        "beatmap": {
+            "ar": [
+            0,
+            10
+            ],
+            "bpm": [
+            0,
+            200
+            ],
+            "cs": [
+            0,
+            10
+            ],
+            "current": 123874,
+            "current_set": 38720,
+            "force_stat": false,
+            "length": [
+            60,
+            180
+            ],
+            "od": [
+            0,
+            10
+            ],
+            "star": [
+            0,
+            10
+            ]
+        },
+        "bot_mode": "AUTO_HOST",
+        "id": "5c3903d7-100a-11ee-b66d-2cf05d88d3b7",
+        "is_closed": false,
+        "is_configured": false,
+        "is_connected": false,
+        "is_created": true,
+        "name": "test 2",
+        "play_mode": "OSU",
+        "room_id": "",
+        "room_size": 16,
+        "score_mode": "SCORE",
+        "skips": [],
+        "team_mode": "HEAD_TO_HEAD",
+        "users": []
     }
 
 ## Get a specific Room
@@ -273,9 +309,9 @@ The REST API to the example app is described below.
 
 ### Request
 
-`PUT /room/:room_id/`
+`PUT /room/:id/`
 
-    curl -i -H 'Accept: application/json' -X PUT http://localhost:5000/room/mp_99999/
+    curl -i -H 'Accept: application/json' -X PUT http://localhost:5000/room/abcd-efgt-asda/
 
      {
         "bot_mode": "AUTO_HOST" | "AUTO_ROTATE_MAP",
@@ -305,17 +341,60 @@ The REST API to the example app is described below.
     Content-Type: application/json
 
     {
-        "message": "Room has been updated!",
-        "status": 200
+        "beatmap": {
+            "ar": [
+            0,
+            10
+            ],
+            "bpm": [
+            0,
+            200
+            ],
+            "cs": [
+            0,
+            10
+            ],
+            "current": 1917081,
+            "current_set": 917930,
+            "force_stat": false,
+            "length": [
+            60,
+            1800
+            ],
+            "od": [
+            0,
+            10
+            ],
+            "star": [
+            3.9,
+            10
+            ]
+        },
+        "bot_mode": "AUTO_ROTATE_MAP",
+        "id": "9e1bfe1b-100c-11ee-a1bf-2cf05d88d3b7",
+        "is_closed": false,
+        "is_configured": true,
+        "is_connected": true,
+        "is_created": true,
+        "name": "test 2",
+        "play_mode": "MANIA",
+        "room_id": "#mp_109111115",
+        "room_size": 3,
+        "score_mode": "SCORE_V2",
+        "skips": [],
+        "team_mode": "TEAM_VS",
+        "users": [
+            "rouel"
+        ]
     }
 
 ## Delete a Room
 
 ### Request
 
-`DELETE /room/:room_id`
+`DELETE /room/:id`
 
-    curl -i -H 'Accept: application/json' -X DELETE http://localhost:5000/room/mp_999999/
+    curl -i -H 'Accept: application/json' -X DELETE http://localhost:5000/room/abcd-efgt-asda/
 
 ### Response
 

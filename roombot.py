@@ -1,5 +1,6 @@
 from __future__ import annotations
 import re
+import uuid
 from typing import TYPE_CHECKING, Any, Optional
 from dataclasses import dataclass, field
 from parsers import parse_message, parse_slot, parse_username
@@ -14,6 +15,7 @@ if TYPE_CHECKING:
 @dataclass
 class Room:
     irc: OsuIrc
+    id: str = ""
     name: str = "test room"
     room_id: str = ""
     password: str = ""
@@ -39,6 +41,9 @@ class Room:
     __configured = False
 
     def __post_init__(self) -> None:
+        if not self.id:
+            self.id = str(uuid.uuid1())
+        
         self.counter.on_count = self.on_count
         self.counter.on_finished = self.on_count_finished
 
@@ -71,6 +76,7 @@ class Room:
 
     def get_json(self) -> dict[str, Any]:
         return {
+            "id": self.id,
             "name": self.name,
             "room_id": self.room_id,
             "is_closed": self.closed,
@@ -136,7 +142,6 @@ class Room:
                 print(f"There are no {k} attribute on Room. Error: ", err)
                 pass
 
-        print("beatmap", beatmap)
         self.beatmap.setattrs(**beatmap)
 
         self.__configured = False
@@ -158,7 +163,7 @@ class Room:
 
     def create(self) -> bool:
         if not self.__created:
-            self.irc.send_private("BanchoBot", f"mp make {self.name}")
+            self.irc.send_private("BanchoBot", f"mp make {self.id}")
             self.__created = True
             self.closed = False
 
@@ -186,9 +191,11 @@ class Room:
         if self.bot_mode == BOT_MODE.AUTO_HOST and self.beatmap.current:
             self.rotate_beatmap()
 
+    def send_close(self) -> None:
+        self.irc.send_private(self.room_id, "!mp close")
+
     def close(self) -> None:
         print(f"Close the match {self.name} {self.room_id}")
-        self.irc.send_private(self.room_id, "!mp close")
         self.closed = True
         self.__created = False
         self.__configured = False
@@ -518,17 +525,15 @@ class RoomBot:
     def get_rooms_json(self) -> list[dict[str, Any]]:
         return [room.get_json() for room in self.rooms]
 
-    def get_room(self, name: str = "", room_id: str = "") -> Optional[Room]:
+    def get_room(self, unique_id: str = "", room_id: str = "") -> Optional[Room]:
         for room in self.rooms:
-            if name == room.name or (room_id and room_id == room.room_id):
+            if (unique_id and unique_id == room.id) or (
+                room_id and room_id == room.room_id
+            ):
                 return room
         return None
 
-    def add_room(self, room: Room) -> Optional[Room]:
-        for _room in self.rooms:
-            if _room.name == room.name:
-                return None
-
+    def add_room(self, room: Room) -> Room:
         self.rooms.append(room)
         return room
 
@@ -547,7 +552,7 @@ class RoomBot:
 
         if id_name:
             name, room_id = id_name.group(2), id_name.group(1)
-            room = self.get_room(name=name)
+            room = self.get_room(unique_id=name)
 
             if room:
                 room.on_match_created(room_id=f"#mp_{room_id}")
