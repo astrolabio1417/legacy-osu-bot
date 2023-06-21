@@ -1,6 +1,7 @@
 from __future__ import annotations
 import re
-from typing import TYPE_CHECKING, Optional
+import uuid
+from typing import TYPE_CHECKING, Any, Optional
 from dataclasses import dataclass, field
 from parsers import parse_message, parse_slot, parse_username
 from beatmaps import message_beatmap_links, RoomBeatmap
@@ -14,9 +15,11 @@ if TYPE_CHECKING:
 @dataclass
 class Room:
     irc: OsuIrc
-    name: str = "yeet"
+    beatmap: RoomBeatmap
+    name: str
+    id: str = ""
     room_id: str = ""
-    password: str = "test"
+    password: str = ""
     closed: bool = False
 
     bot_mode: BOT_MODE = BOT_MODE.AUTO_HOST
@@ -27,11 +30,11 @@ class Room:
 
     users: list[str] = field(default_factory=list)
     skips: list[str] = field(default_factory=list)
+    aborts: list[str] = field(default_factory=list)
     tmp_users: list[str] = field(default_factory=list)
     tmp_total_users: int = 0
     show_countdown_message_in_seconds = [3, 10, 30, 60, 90, 120, 150, 180]
 
-    beatmap: RoomBeatmap = RoomBeatmap()
     counter: Counter = Counter()
 
     __connected = False
@@ -39,6 +42,10 @@ class Room:
     __configured = False
 
     def __post_init__(self) -> None:
+        if not self.id:
+            self.id = str(uuid.uuid1())
+
+        self.counter = Counter()
         self.counter.on_count = self.on_count
         self.counter.on_finished = self.on_count_finished
 
@@ -64,10 +71,29 @@ class Room:
                 raise ValueError(f"{name} is invalid.")
 
         if self.bot_mode == BOT_MODE.AUTO_ROTATE_MAP:
-            self.beatmap.load_beatmaps(self.play_mode.value[1])
+            self.beatmap.load_beatmaps(self.play_mode.value)
 
         if self.bot_mode == BOT_MODE.AUTO_HOST and not self.beatmap.current:
-            self.beatmap.init_current(self.play_mode.value[1])
+            self.beatmap.init_current(self.play_mode.value)
+
+    def get_json(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "room_id": self.room_id,
+            "is_closed": self.closed,
+            "bot_mode": self.bot_mode.name,
+            "play_mode": self.play_mode.name,
+            "team_mode": self.team_mode.name,
+            "score_mode": self.score_mode.name,
+            "room_size": self.room_size,
+            "is_connected": self.__connected,
+            "is_created": self.__created,
+            "is_configured": self.__configured,
+            "users": self.users,
+            "skips": self.skips,
+            "beatmap": self.beatmap.get_json(),
+        }
 
     def on_count(self, count: int) -> int:
         print(f"count {count}")
@@ -79,18 +105,22 @@ class Room:
 
     def on_count_finished(self) -> bool:
         print("count finished!")
-        self.irc.send_private(self.room_id, "!mp start")
+
+        if self.users:
+            self.irc.send_private(self.room_id, "!mp start")
+
         return True
 
     def update(
         self,
-        name: Optional[str],
-        password: Optional[str],
-        play_mode: Optional[PLAY_MODE],
-        team_mode: Optional[TEAM_MODE],
-        score_mode: Optional[SCORE_MODE],
-        bot_mode: Optional[BOT_MODE],
-        room_size: Optional[int],
+        name: Optional[str] = None,
+        password: Optional[str] = None,
+        play_mode: Optional[PLAY_MODE] = None,
+        team_mode: Optional[TEAM_MODE] = None,
+        score_mode: Optional[SCORE_MODE] = None,
+        bot_mode: Optional[BOT_MODE] = None,
+        room_size: Optional[int] = None,
+        beatmap: Optional[dict[str, Any]] = None,
     ) -> None:
         self.name = name or self.name
         self.password = password or self.password
@@ -100,10 +130,34 @@ class Room:
         self.room_size = room_size or self.room_size
         self.bot_mode = bot_mode or self.bot_mode
 
+        if beatmap:
+            self.beatmap.update(**beatmap)
+
+        self.__configured = False
+        self.__post_init__()
+        self.on_match_created(self.room_id)
+
+    def setattrs(self, **kwargs: dict[str, Any]) -> None:
+        beatmap = kwargs.pop("beatmap", {})
+
+        for k, v in kwargs.items():
+            try:
+                setattr(self, k, v)
+            except AttributeError as err:
+                print(f"There are no {k} attribute on Room. Error: ", err)
+                pass
+
+        self.beatmap.setattrs(**beatmap)
+
+        self.__configured = False
+        self.__post_init__()
+        self.on_match_created(self.room_id)
+
     def restart(self) -> None:
         self.room_id = ""
         self.users = []
         self.skips = []
+        self.aborts = []
         self.__connected = False
         self.__created = False
         self.__configured = False
@@ -115,8 +169,9 @@ class Room:
 
     def create(self) -> bool:
         if not self.__created:
-            self.irc.send_private("BanchoBot", f"mp make {self.name}")
+            self.irc.send_private("BanchoBot", f"mp make {self.id}")
             self.__created = True
+            self.closed = False
 
         return self.__created
 
@@ -132,14 +187,18 @@ class Room:
         return self.__connected
 
     def on_match_created(self, room_id: str) -> None:
-        self.room_id = f"#mp_{room_id}"
+        self.room_id = room_id
         print(f"Room Created {self.room_id} {self.name}")
         self.irc.send_private(self.room_id, f"JOIN {self.room_id}")
+        self.__connected = True
         self.setup()
         self.rotate()
 
         if self.bot_mode == BOT_MODE.AUTO_HOST and self.beatmap.current:
             self.rotate_beatmap()
+
+    def send_close(self) -> None:
+        self.irc.send_private(self.room_id, "!mp close")
 
     def close(self) -> None:
         print(f"Close the match {self.name} {self.room_id}")
@@ -157,7 +216,7 @@ class Room:
         messages = [
             f"!mp name {self.name}",
             f"!mp password {self.password}",
-            f"!mp set {self.team_mode.value[1]} {self.score_mode.value[1]} {self.room_size}",
+            f"!mp set {self.team_mode.value} {self.score_mode.value} {self.room_size}",
             "!mp mods Freemod",
         ]
 
@@ -187,7 +246,7 @@ class Room:
 
     def set_map(self, beatmap_id: int) -> None:
         self.irc.send_private(
-            self.room_id, f"!mp map {beatmap_id} {self.play_mode.value[1]}"
+            self.room_id, f"!mp map {beatmap_id} {self.play_mode.value}"
         )
 
     def add_user(self, username: str) -> None:
@@ -217,7 +276,9 @@ class Room:
 
     def on_match_started(self) -> None:
         print(f"{self.room_id}: Match started")
+        self.counter.stop()
         self.skips = []
+        self.aborts = []
 
         if self.bot_mode == BOT_MODE.AUTO_HOST:
             self.rotate_host()
@@ -259,7 +320,7 @@ class Room:
 
         self.irc.send_private(
             self.room_id,
-            f"!mp map {beatmap_id if beatmap_id else self.beatmap.current} {self.play_mode.value[1]}",
+            f"!mp map {beatmap_id if beatmap_id else self.beatmap.current} {self.play_mode.value}",
         )
 
     def on_changed_beatmap_to(self, title: str, url: str, beatmap_id: int) -> None:
@@ -283,13 +344,13 @@ class Room:
         if self.beatmap.force_stat and self.beatmap.current:
             errors = self.beatmap.check_beatmap(beatmap)
 
-            if beatmap.get("mode_int") != self.play_mode.value[1]:
+            if beatmap.get("mode_int") != self.play_mode.value:
                 errors.append(("Play Mode"))
 
             if errors:
                 self.irc.send_private(
                     self.room_id,
-                    f"!mp map {self.beatmap.current} {self.play_mode.value[1]} | Rule Violations: {', '.join(errors)}",
+                    f"!mp map {self.beatmap.current} {self.play_mode.value} | Rule Violations: {', '.join(errors)}",
                 )
                 return
 
@@ -335,15 +396,33 @@ class Room:
 
         self.skips.append(sender)
         current_votes = len(self.skips)
-        total = round(len(self.users) / 2)
+        half_total = round(len(self.users) / 2)
 
-        if current_votes >= total or (
+        if current_votes >= half_total or (
             self.bot_mode == BOT_MODE.AUTO_HOST and sender == self.users[0]
         ):
             self.rotate()
             return
 
-        self.irc.send_private(self.room_id, f"Skip voting: {current_votes} / {total}")
+        self.irc.send_private(
+            self.room_id, f"Skip voting: {current_votes} / {half_total}"
+        )
+
+    def on_abort(self, sender: str) -> None:
+        if sender in self.aborts:
+            return
+
+        self.aborts.append(sender)
+        current_votes = len(self.aborts)
+        half_total = round(len(self.aborts) / 2)
+
+        if current_votes >= half_total:
+            self.irc.send_private(self.room_id, "!mp abort")
+            return
+
+        self.irc.send_private(
+            self.room_id, f"Abort voting: {current_votes} / {half_total}"
+        )
 
     def on_message_start(self, message: str) -> None:
         words = message.strip().split()
@@ -372,7 +451,7 @@ class Room:
     def send_commands(self) -> None:
         self.irc.send_private(
             self.room_id,
-            f"Commands: !start <seconds>, !stop, !queue, !skip, !alt",
+            f"Commands: !start <seconds>, !stop, !queue, !skip, !alt, !abort",
         )
 
     def send_beatmap_alt(self) -> None:
@@ -404,6 +483,8 @@ class Room:
                     self.send_commands()
                 case "!alt":
                     self.send_beatmap_alt()
+                case "!abort":
+                    self.on_abort(sender=sender)
 
             return
 
@@ -469,17 +550,18 @@ class RoomBot:
     irc: OsuIrc
     rooms: list[Room] = field(default_factory=list)
 
-    def get_room(self, name: str = "", room_id: str = "") -> Optional[Room]:
+    def get_rooms_json(self) -> list[dict[str, Any]]:
+        return [room.get_json() for room in self.rooms]
+
+    def get_room(self, unique_id: str = "", room_id: str = "") -> Optional[Room]:
         for room in self.rooms:
-            if name == room.name or room_id == room.room_id:
+            if (unique_id and unique_id == room.id) or (
+                room_id and room_id == room.room_id
+            ):
                 return room
         return None
 
     def add_room(self, room: Room) -> Room:
-        for _room in self.rooms:
-            if _room.name == room.name:
-                return _room
-
         self.rooms.append(room)
         return room
 
@@ -498,10 +580,10 @@ class RoomBot:
 
         if id_name:
             name, room_id = id_name.group(2), id_name.group(1)
-            room = self.get_room(name=name)
+            room = self.get_room(unique_id=name)
 
             if room:
-                room.on_match_created(room_id=room_id)
+                room.on_match_created(room_id=f"#mp_{room_id}")
 
     def on_message_receive(self, message: Optional[str | MESSAGE_YIELD]) -> None:
         if isinstance(message, str):

@@ -1,5 +1,6 @@
 import random
 from dataclasses import dataclass, field
+from typing import Any, Optional
 from bot_typing import BeatmapDict, BeatmapSetDict
 from scraper import fetch_beatmap
 
@@ -18,8 +19,48 @@ class RoomBeatmap:
     asset_filename: str = "beatmaps-1.json"
     force_stat: bool = False
 
-    def __post_init__(self) -> None:
-        pass
+    def get_json(self) -> dict[str, Any]:
+        return {
+            "star": self.star,
+            "ar": self.ar,
+            "cs": self.cs,
+            "od": self.od,
+            "length": self.length,
+            "bpm": self.bpm,
+            "current": self.current,
+            "current_set": self.current_set,
+            "force_stat": self.force_stat,
+        }
+
+    def get_list(self) -> list[BeatmapDict]:
+        return self.lists
+
+    def update(
+        self,
+        star: Optional[tuple[float, float]] = None,
+        ar: Optional[tuple[float, float]] = None,
+        cs: Optional[tuple[float, float]] = None,
+        od: Optional[tuple[float, float]] = None,
+        length: Optional[tuple[int, int]] = None,
+        bpm: Optional[tuple[int, int]] = None,
+        force_stat: Optional[bool] = None,
+        asset_filename: Optional[str] = None,
+    ) -> None:
+        self.star = star or self.star
+        self.ar = ar or self.ar
+        self.cs = cs or self.cs
+        self.od = od or self.od
+        self.length = length or self.length
+        self.bpm = bpm or self.bpm
+        self.force_stat = force_stat or self.force_stat
+        self.asset_filename = asset_filename or self.asset_filename
+
+    def setattrs(self, **kwargs: dict[str, Any]) -> None:
+        for k, v in kwargs.items():
+            try:
+                setattr(self, k, v)
+            except AttributeError:
+                pass
 
     def load_beatmaps(self, play_mode: int, max: int = 999999) -> list[BeatmapDict]:
         import json
