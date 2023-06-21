@@ -416,6 +416,10 @@ class Room:
         current_votes = len(self.aborts)
         half_total = round(len(self.aborts) / 2)
 
+        if current_votes >= half_total:
+            self.rotate()
+            return
+
         self.irc.send_private(
             self.room_id, f"Abort voting: {current_votes} / {half_total}"
         )
