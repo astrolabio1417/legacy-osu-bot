@@ -30,6 +30,7 @@ class Room:
 
     users: list[str] = field(default_factory=list)
     skips: list[str] = field(default_factory=list)
+    aborts: list[str] = field(default_factory=list)
     tmp_users: list[str] = field(default_factory=list)
     tmp_total_users: int = 0
     show_countdown_message_in_seconds = [3, 10, 30, 60, 90, 120, 150, 180]
@@ -156,6 +157,7 @@ class Room:
         self.room_id = ""
         self.users = []
         self.skips = []
+        self.aborts = []
         self.__connected = False
         self.__created = False
         self.__configured = False
@@ -276,6 +278,7 @@ class Room:
         print(f"{self.room_id}: Match started")
         self.counter.stop()
         self.skips = []
+        self.aborts = []
 
         if self.bot_mode == BOT_MODE.AUTO_HOST:
             self.rotate_host()
@@ -393,15 +396,29 @@ class Room:
 
         self.skips.append(sender)
         current_votes = len(self.skips)
-        total = round(len(self.users) / 2)
+        half_total = round(len(self.users) / 2)
 
-        if current_votes >= total or (
+        if current_votes >= half_total or (
             self.bot_mode == BOT_MODE.AUTO_HOST and sender == self.users[0]
         ):
             self.rotate()
             return
 
-        self.irc.send_private(self.room_id, f"Skip voting: {current_votes} / {total}")
+        self.irc.send_private(
+            self.room_id, f"Skip voting: {current_votes} / {half_total}"
+        )
+
+    def on_abort(self, sender: str) -> None:
+        if sender in self.aborts:
+            return
+
+        self.aborts.append(sender)
+        current_votes = len(self.aborts)
+        half_total = round(len(self.aborts) / 2)
+
+        self.irc.send_private(
+            self.room_id, f"Abort voting: {current_votes} / {half_total}"
+        )
 
     def on_message_start(self, message: str) -> None:
         words = message.strip().split()
@@ -430,7 +447,7 @@ class Room:
     def send_commands(self) -> None:
         self.irc.send_private(
             self.room_id,
-            f"Commands: !start <seconds>, !stop, !queue, !skip, !alt",
+            f"Commands: !start <seconds>, !stop, !queue, !skip, !alt, !abort",
         )
 
     def send_beatmap_alt(self) -> None:
@@ -462,6 +479,8 @@ class Room:
                     self.send_commands()
                 case "!alt":
                     self.send_beatmap_alt()
+                case "!abort":
+                    self.on_abort(sender=sender)
 
             return
 
