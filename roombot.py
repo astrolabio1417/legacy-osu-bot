@@ -417,7 +417,7 @@ class Room:
         half_total = round(len(self.aborts) / 2)
 
         if current_votes >= half_total:
-            self.rotate()
+            self.irc.send_private(self.room_id, "!mp abort")
             return
 
         self.irc.send_private(
