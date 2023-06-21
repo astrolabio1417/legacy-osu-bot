@@ -15,8 +15,9 @@ if TYPE_CHECKING:
 @dataclass
 class Room:
     irc: OsuIrc
+    beatmap: RoomBeatmap
+    name: str
     id: str = ""
-    name: str = "test room"
     room_id: str = ""
     password: str = ""
     closed: bool = False
@@ -33,7 +34,6 @@ class Room:
     tmp_total_users: int = 0
     show_countdown_message_in_seconds = [3, 10, 30, 60, 90, 120, 150, 180]
 
-    beatmap: RoomBeatmap = RoomBeatmap()
     counter: Counter = Counter()
 
     __connected = False
@@ -43,7 +43,8 @@ class Room:
     def __post_init__(self) -> None:
         if not self.id:
             self.id = str(uuid.uuid1())
-        
+
+        self.counter = Counter()
         self.counter.on_count = self.on_count
         self.counter.on_finished = self.on_count_finished
 
@@ -103,7 +104,10 @@ class Room:
 
     def on_count_finished(self) -> bool:
         print("count finished!")
-        self.irc.send_private(self.room_id, "!mp start")
+
+        if self.users:
+            self.irc.send_private(self.room_id, "!mp start")
+
         return True
 
     def update(
@@ -270,6 +274,7 @@ class Room:
 
     def on_match_started(self) -> None:
         print(f"{self.room_id}: Match started")
+        self.counter.stop()
         self.skips = []
 
         if self.bot_mode == BOT_MODE.AUTO_HOST:
