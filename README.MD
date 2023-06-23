@@ -28,23 +28,23 @@
 
 # DOCKER SETUP
 
-Download and Install Docker https://www.docker.com/products/docker-desktop/
-Edit username and password in config.json(create this file inside backend folder) or docker-compose.yml environment
-Run Docker app
+-   Download and Install Docker https://www.docker.com/products/docker-desktop/
+-   Edit username and password in config.json(create this file inside backend folder) or docker-compose.yml environment
+-   Run Docker app
 
 ```
 docker compose -f "docker-compose.yml" up -d --build
 ```
 
-Visit local link http://localhost:3000/
+-   Visit local link http://localhost:3000/
 
 # SETUP OLD
 
-download and install python https://www.python.org/downloads/
-pip install -r requirements.txt
-go to https://osu.ppy.sh/home/account/edit
-on Legacy API create IRC
-create config.json and add your credentials
+-   download and install python https://www.python.org/downloads/
+-   pip install -r requirements.txt
+-   go to https://osu.ppy.sh/home/account/edit
+-   on Legacy API create IRC
+-   create config.json and add your credentials
 
 ```
 {
@@ -53,8 +53,8 @@ create config.json and add your credentials
 }
 ```
 
-edit main.js
-add room sample
+-   edit main.js
+-   add room sample
 
 ```
     # auto host
@@ -95,7 +95,7 @@ add room sample
     )
 ```
 
-run the app
+-   run the app
 
 ```
 py main.js
