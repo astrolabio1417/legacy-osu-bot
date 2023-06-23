@@ -1,13 +1,14 @@
-FROM node:20-alpine
+FROM node:18-alpine3.15
 
 WORKDIR /usr/src/frontend
 
+RUN npm -g install pnpm
 COPY package.json .
+COPY pnpm-lock.yaml .
 
-RUN npm config set registry https://registry.npmmirror.com/ \
-  && npm install -g pnpm vite \
+RUN pnpm config set registry https://registry.npmmirror.com/ \
   && pnpm install
 
 COPY . .
 
-
+CMD ["pnpm", "dev"]

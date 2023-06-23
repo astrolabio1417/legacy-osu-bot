@@ -1,4 +1,4 @@
-from enum import Enum
+import os
 import json
 from typing import Any
 from flask import Flask, request
@@ -160,3 +160,8 @@ def bot_enums() -> Any:
 
 def extract_enum(e: Any) -> list[str]:
     return [a.name for a in e]
+
+
+if __name__ == "__main__":
+    PORT = int(os.environ.get("PORT", 8000))
+    app.run(host="0.0.0.0", port=PORT)

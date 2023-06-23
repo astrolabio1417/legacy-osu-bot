@@ -656,7 +656,5 @@ class RoomBot:
         print("Create and Join Rooms")
         self.create_rooms()
 
-        with open("logs/messages1.txt", "w") as f:
-            for message in self.irc.message_generator():
-                f.write(f"{message}\n")
-                self.on_message_receive(message)
+        for message in self.irc.message_generator():
+            self.on_message_receive(message)
