@@ -26,11 +26,22 @@
 -   0: "AutoHost"
 -   1: "AutoRotateMap"
 
-#### SETUP
+# DOCKER SETUP
+
+-   Download and Install Docker https://www.docker.com/products/docker-desktop/
+-   Edit username and password in config.json(create this file inside backend folder) or docker-compose.yml environment
+-   Run Docker app
+
+```
+docker compose -f "docker-compose.yml" up -d --build
+```
+
+-   Visit local link http://localhost:3000/
+
+# SETUP OLD
 
 -   download and install python https://www.python.org/downloads/
 -   pip install -r requirements.txt
-
 -   go to https://osu.ppy.sh/home/account/edit
 -   on Legacy API create IRC
 -   create config.json and add your credentials
@@ -88,12 +99,6 @@
 
 ```
 py main.js
-```
-
--   run the backend
-
-```
-flask run
 ```
 
 # REST API

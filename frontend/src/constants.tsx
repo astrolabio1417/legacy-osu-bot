@@ -1,5 +1,5 @@
 const CONFIG = {
-  api: "http://localhost:5000/",
+  api: import.meta.env.API ?? `http://localhost:8000/`,
   BEATMAP_SETTING_KEYS: [
     "star",
     "cs",

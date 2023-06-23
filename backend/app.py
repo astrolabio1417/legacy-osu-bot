@@ -1,8 +1,6 @@
-from enum import Enum
-import json
+import os
 from typing import Any
 from flask import Flask, request
-import json
 import threading
 from irc import OsuIrc
 from roombot import Room, RoomBot
@@ -10,19 +8,21 @@ from beatmaps import RoomBeatmap
 from bot_enums import BOT_MODE, TEAM_MODE, SCORE_MODE, PLAY_MODE
 from roombot import Room
 from flask_cors import CORS
+from helpers import (
+    convert_to_tuples,
+    enum_parser,
+    extract_enum,
+    get_user_credentials,
+)
 
 app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
-with open("config.json", "r") as f:
-    configuration = json.loads(f.read())
-
-if not configuration.get("username") or not configuration.get("password"):
-    raise KeyError("username or password not found on config.json!")
+credentials = get_user_credentials()
 
 irc = OsuIrc(
-    username=configuration.get("username"),
-    password=configuration.get("password"),
+    username=credentials["username"],
+    password=credentials["password"],
 )
 room_bot = RoomBot(irc=irc)
 
@@ -31,37 +31,6 @@ try:
     threading.Thread(target=room_bot.start, args=()).start()
 except KeyboardInterrupt:
     irc.close()
-
-
-def convert_to_tuples(data: dict[str, Any]) -> dict[str, Any]:
-    """list to tuple"""
-    beatmap_tuples = ["star", "ar", "cs", "od", "length", "bpm"]
-
-    for key, value in data.items():
-        if key in beatmap_tuples and type(value) == list:
-            data[key] = tuple(value)
-
-    return data
-
-
-def enum_parser(data: dict[str, Any]) -> dict[str, Any]:
-    room_enums = {
-        "bot_mode": BOT_MODE,
-        "play_mode": PLAY_MODE,
-        "team_mode": TEAM_MODE,
-        "score_mode": SCORE_MODE,
-    }
-
-    for key, value in data.items():
-        enum_value = room_enums.get(key)
-
-        if enum_value:
-            try:
-                data[key] = enum_value[value]
-            except KeyError:
-                data.pop(key)
-
-    return data
 
 
 def create_room(data: Any) -> tuple[dict[str, Any], int]:
@@ -158,5 +127,6 @@ def bot_enums() -> Any:
     }
 
 
-def extract_enum(e: Any) -> list[str]:
-    return [a.name for a in e]
+if __name__ == "__main__":
+    PORT = int(os.environ.get("PORT", 8000))
+    app.run(host="0.0.0.0", port=PORT)
