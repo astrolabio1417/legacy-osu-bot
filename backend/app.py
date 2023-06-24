@@ -1,6 +1,6 @@
 import os
 from typing import Any
-from flask import Flask, request
+from flask import Flask, request, send_from_directory
 import threading
 from irc import OsuIrc
 from roombot import Room, RoomBot
@@ -15,7 +15,7 @@ from helpers import (
     get_user_credentials,
 )
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="dist")
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 credentials = get_user_credentials()
@@ -82,11 +82,6 @@ def delete_room(room_unique_id: str) -> tuple[dict[str, Any], int]:
     return {"id": room_unique_id}, 204
 
 
-@app.route("/")
-def hello_world() -> str:
-    return "<h1>Hello world</h1>"
-
-
 @app.route("/room", methods=["GET", "POST", "DELETE", "PUT"])
 def room() -> Any:
     if request.method == "GET":
@@ -125,6 +120,15 @@ def bot_enums() -> Any:
         "SCORE_MODE": extract_enum(SCORE_MODE),
         "PLAY_MODE": extract_enum(PLAY_MODE),
     }
+
+
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve(path):
+    if path != "" and os.path.exists(app.static_folder + "/" + path):
+        return send_from_directory(app.static_folder, path)
+
+    return send_from_directory(app.static_folder, "index.html")
 
 
 if __name__ == "__main__":
