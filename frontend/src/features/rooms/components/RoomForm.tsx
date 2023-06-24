@@ -8,16 +8,16 @@ import {
   Select,
   Slider,
 } from "antd";
-import useEnums from "../hooks/useEnums";
-import { IRoomForm } from "../Interface";
+import useEnums from "../../../hooks/useEnums";
+import { IRoomForm } from "../../../types/roomFormInterface";
 
-interface RoomFormProp {
+interface RoomFormProps {
   initialValues?: IRoomForm;
   onFinished?: (values: IRoomForm) => Promise<boolean>;
   resetOnSubmit?: boolean;
 }
 
-export default function RoomForm(prop: RoomFormProp) {
+export default function RoomForm(props: RoomFormProps) {
   const { enums } = useEnums();
   const [form] = Form.useForm();
 
@@ -40,8 +40,8 @@ export default function RoomForm(prop: RoomFormProp) {
   };
 
   async function onFinish(values: IRoomForm) {
-    const ok = await prop.onFinished?.(values);
-    ok && prop.resetOnSubmit && form.resetFields();
+    const ok = await props.onFinished?.(values);
+    ok && props.resetOnSubmit && form.resetFields();
   }
 
   return (
@@ -50,7 +50,7 @@ export default function RoomForm(prop: RoomFormProp) {
         form={form}
         style={{ maxWidth: 900, margin: "auto" }}
         onFinish={onFinish}
-        initialValues={prop.initialValues ?? defaultInitialValues}
+        initialValues={props.initialValues ?? defaultInitialValues}
       >
         <div style={{ paddingBottom: 15 }}>
           <Divider orientation="left">Room Settings</Divider>

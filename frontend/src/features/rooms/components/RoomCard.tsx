@@ -1,6 +1,7 @@
 import { Button, Card, List, Modal, Space } from "antd";
-import { IRoom, IRoomForm } from "../Interface";
-import { deleteRoom, updateRoom } from "../api/RoomAPI";
+import { IRoom } from "../../../types/roomInterface";
+import { IRoomForm } from "../../../types/roomFormInterface";
+import { deleteRoom, updateRoom } from "../../../services/roomService";
 import { useState } from "react";
 import RoomForm from "./RoomForm";
 

@@ -1,8 +1,10 @@
 FROM node:18-alpine3.15
 
+RUN npm -g install pnpm
+
+RUN mkdir -p /usr/src/frontend
 WORKDIR /usr/src/frontend
 
-RUN npm -g install pnpm
 COPY package.json .
 COPY pnpm-lock.yaml .
 
