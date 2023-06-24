@@ -1,4 +1,4 @@
-import { IRoom } from "../Interface";
+import { IRoom } from "../../../types/roomInterface";
 import { List } from "antd";
 import RoomCard from "./RoomCard";
 

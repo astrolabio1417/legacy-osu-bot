@@ -3,10 +3,9 @@ version: "3.8"
 services:
     osu_bot_frontend:
         build: ./frontend
-        command: pnpm run dev
         volumes:
             - ./frontend:/usr/src/frontend
-            - /usr/src/node_modules
+            - /usr/src/frontend/node_modules
         ports:
             - 3000:3000
         stdin_open: true

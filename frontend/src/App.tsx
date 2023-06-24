@@ -1,5 +1,5 @@
 import { ConfigProvider } from "antd";
-import Home from "./container/RoomContainer";
+import RoomPage from "./pages/RoomPage";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./app.css";
@@ -15,7 +15,7 @@ function App() {
       }}
     >
       <div style={{ marginLeft: 10, marginRight: 10 }}>
-        <Home />
+        <RoomPage />
         <ToastContainer
           position="bottom-center"
           autoClose={5000}

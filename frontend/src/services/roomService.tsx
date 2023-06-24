@@ -1,9 +1,9 @@
 import { toast } from "react-toastify";
-import { IRoomForm } from "../Interface";
-import { CONFIG } from "../constants";
+import { IRoomForm } from "../types/roomFormInterface";
+import { API } from "../data/constants";
 
 export async function createRoom(values: IRoomForm) {
-  const res = await fetch(`${CONFIG.api}room`, {
+  const res = await fetch(`${API}/room`, {
     method: "POST",
     body: JSON.stringify(values),
     headers: {
@@ -25,7 +25,7 @@ export async function createRoom(values: IRoomForm) {
 }
 
 export async function deleteRoom(id: string) {
-  const res = await fetch(`${CONFIG.api}/room/${id}`, {
+  const res = await fetch(`${API}/room/${id}`, {
     method: "delete",
   });
 
@@ -41,7 +41,7 @@ export async function deleteRoom(id: string) {
 }
 
 export async function updateRoom(values: IRoomForm, id: string) {
-  const res = await fetch(`${CONFIG.api}/room/${id}`, {
+  const res = await fetch(`${API}/room/${id}`, {
     method: "put",
     body: JSON.stringify(values),
     headers: {

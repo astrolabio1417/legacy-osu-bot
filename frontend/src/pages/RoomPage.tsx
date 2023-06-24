@@ -1,11 +1,10 @@
 import { Button, Divider, Modal } from "antd";
-import RoomForm from "../components/RoomForm";
-import RoomListing from "../components/RoomListing";
-import useRoomListing from "../hooks/useRoomListing";
 import { useState } from "react";
-import { createRoom } from "../api/RoomAPI";
+import { createRoom } from "../services/roomService";
+import { RoomForm, RoomListing } from "../features/rooms";
+import useRoomListing from "../hooks/useRoomListing";
 
-export default function Home() {
+export default function RoomPage() {
   const { roomList } = useRoomListing();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
