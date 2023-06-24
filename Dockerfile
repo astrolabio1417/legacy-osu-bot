@@ -22,5 +22,11 @@ COPY --from=builder /usr/src/frontend/dist /usr/src/backend/dist
 
 RUN pip install -r requirements.txt
 
+ENV PORT=80
+ENV USERNAME=rouel
+ENV PASSWORD=aae89501
+ENV VITE_API=http://localhost:80/
+EXPOSE 80
+
 RUN ["chmod", "+x", "/usr/src/backend/entrypoint.sh"]
 ENTRYPOINT [ "/usr/src/backend/entrypoint.sh" ]

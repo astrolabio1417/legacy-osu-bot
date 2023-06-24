@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 
-export const API = import.meta.env.API ?? `http://localhost:8000/`;
+export const API = import.meta.env.VITE_API ?? `http://localhost:8000/`;
 
 export const BEATMAP_KEYS = [
   "star",
