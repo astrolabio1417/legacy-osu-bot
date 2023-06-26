@@ -64,7 +64,7 @@ class RoomBeatmap:
             except AttributeError:
                 pass
 
-    def fetch_beatmaps(self, play_mode: int, max: int = 1000) -> list[BeatmapDict]:
+    def setup_beatmaps(self, play_mode: int, max: int = 1000) -> list[BeatmapDict]:
         beatmapsets = neri_search(
             page_size=50 if max == 1 else max,
             settings=NeriSetting(
@@ -96,6 +96,7 @@ class RoomBeatmap:
                 ] = f"{beatmapset['title']} {beatmap['difficulty_title']}"
                 beatmaps.append(beatmap)
                 break
+
         print("total fetch map: ", len(beatmapsets))
         print("total map: ", len(beatmaps))
         self.lists = beatmaps
@@ -138,7 +139,7 @@ class RoomBeatmap:
         return []
 
     def init_current(self, play_mode: int) -> BeatmapDict | None:
-        self.fetch_beatmaps(play_mode, max=1)
+        self.setup_beatmaps(play_mode, max=1)
 
         if not self.lists:
             return None
@@ -157,7 +158,7 @@ class RoomBeatmap:
         return ", ".join(
             [
                 f"[https://osu.ppy.sh/beatmapsets/{beatmap.get('beatmapset_id', 0)} {beatmap.get('title', 'no_title')} - {beatmap.get('difficulty_title', '?')}]"
-                for beatmap in self.lists[0:5]
+                for beatmap in self.lists[0:3]
             ]
         )
 
