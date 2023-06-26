@@ -71,7 +71,7 @@ class Room:
                 raise ValueError(f"{name} is invalid.")
 
         if self.bot_mode == BOT_MODE.AUTO_ROTATE_MAP:
-            self.beatmap.load_beatmaps(self.play_mode.value)
+            self.beatmap.fetch_beatmaps(self.play_mode.value)
 
         if self.bot_mode == BOT_MODE.AUTO_HOST and not self.beatmap.current:
             self.beatmap.init_current(self.play_mode.value)

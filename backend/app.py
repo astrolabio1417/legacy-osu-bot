@@ -124,11 +124,11 @@ def bot_enums() -> Any:
 
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
-def serve(path):
-    if path != "" and os.path.exists(app.static_folder + "/" + path):
-        return send_from_directory(app.static_folder, path)
+def serve(path: str) -> Any:
+    if path != "" and os.path.exists(f"{app.static_folder}" + "/" + path):
+        return send_from_directory(f"{app.static_folder}", path)
 
-    return send_from_directory(app.static_folder, "index.html")
+    return send_from_directory(f"{app.static_folder}", "index.html")
 
 
 if __name__ == "__main__":

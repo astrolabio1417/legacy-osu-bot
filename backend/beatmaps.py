@@ -1,6 +1,8 @@
 import random
 from dataclasses import dataclass, field
 from typing import Any, Optional
+
+from neri_scraper import neri_search, NeriSetting
 from bot_typing import BeatmapDict, BeatmapSetDict
 from scraper import fetch_beatmap
 
@@ -16,7 +18,7 @@ class RoomBeatmap:
     current: int = 0
     current_set: int = 0
     lists: list[BeatmapDict] = field(default_factory=list)
-    asset_filename: str = "beatmaps-1.json"
+    asset_filename: str = "beatmaps-2.json"
     force_stat: bool = False
 
     def get_json(self) -> dict[str, Any]:
@@ -62,6 +64,44 @@ class RoomBeatmap:
             except AttributeError:
                 pass
 
+    def fetch_beatmaps(self, play_mode: int, max: int = 1000) -> list[BeatmapDict]:
+        beatmapsets = neri_search(
+            page_size=50 if max == 1 else max,
+            settings=NeriSetting(
+                m=play_mode,
+                star=self.star,
+                cs=self.cs,
+                length=self.length,
+                bpm=self.bpm,
+                ar=self.ar,
+            ),
+        )
+        beatmaps: list[BeatmapDict] = []
+
+        for beatmapset in beatmapsets:
+            for beatmap in reversed(beatmapset.get("beatmaps", [])):
+                if (
+                    play_mode != beatmap.get("mode_int")
+                    or not self.check_star(beatmap.get("difficulty_rating", 0))
+                    or not self.check_ar(beatmap.get("ar", 0))
+                    or not self.check_bpm(beatmap.get("bpm", 0))
+                    or not self.check_length(beatmap.get("total_length", 0))
+                    or not self.check_cs(beatmap.get("cs", 0))
+                ):
+                    continue
+
+                beatmap["difficulty_title"] = str(beatmap.get("version", ""))
+                beatmap[
+                    "title"
+                ] = f"{beatmapset['title']} {beatmap['difficulty_title']}"
+                beatmaps.append(beatmap)
+                break
+        print("total fetch map: ", len(beatmapsets))
+        print("total map: ", len(beatmaps))
+        self.lists = beatmaps
+
+        return beatmaps[0:1] if max == 1 else beatmaps
+
     def load_beatmaps(self, play_mode: int, max: int = 999999) -> list[BeatmapDict]:
         import json
 
@@ -98,7 +138,7 @@ class RoomBeatmap:
         return []
 
     def init_current(self, play_mode: int) -> BeatmapDict | None:
-        self.load_beatmaps(play_mode, max=1)
+        self.fetch_beatmaps(play_mode, max=1)
 
         if not self.lists:
             return None
@@ -131,6 +171,9 @@ class RoomBeatmap:
 
     def check_bpm(self, bpm: float) -> bool:
         return self.check_is_in_range(bpm, self.bpm[0], self.bpm[1])
+
+    def check_cs(self, cs: float) -> bool:
+        return self.check_is_in_range(cs, self.cs[0], self.cs[1])
 
     def check_ar(self, ar: float) -> bool:
         return self.check_is_in_range(ar, self.ar[0], self.ar[1])
@@ -167,17 +210,20 @@ class RoomBeatmap:
             ar = self.check_ar(beatmap.get("ar", 0))
             bpm = self.check_bpm(beatmap.get("bpm", 0))
             length = self.check_length(beatmap.get("total_length", 0))
+            cs = self.check_cs(beatmap.get("cs", 0))
 
             print("star: ", star)
             print("ar: ", ar)
             print("bpm: ", bpm)
             print("length: ", length)
+            print("cs: ", cs)
 
             for name, value in [
                 ("Star", star),
                 ("AR", ar),
                 ("BPM", bpm),
                 ("Length", length),
+                ("Circle Size", cs),
             ]:
                 if not value:
                     errors.append(name)
