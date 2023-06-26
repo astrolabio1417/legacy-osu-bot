@@ -36,7 +36,7 @@ class OsuIrc:
         except TimeoutError:
             self.is_connected = False
             print("~ Timeout Error!")
-        except socket.gaierror:
+        except (socket.gaierror, ConnectionRefusedError):
             self.is_connected = False
             print("~ No Internet Connection!")
 
