@@ -25,28 +25,21 @@ export default function RoomCard(props: IRoom) {
 
   return (
     <List.Item>
-      <Card
-        title={
-          <>
-            {name}
-            {" ~ "}
-            <b>
-              <span
-                style={{
-                  color: is_closed ? "gray" : is_connected ? "green" : "red",
-                }}
-              >
-                {is_closed
-                  ? "Closed"
-                  : is_connected
-                  ? "Connected"
-                  : "Not Connected"}
-              </span>
-            </b>
-          </>
-        }
-      >
+      <Card title={<>{name}</>}>
         <div style={{ display: "flex", flexDirection: "column" }}>
+          <span
+            style={{
+              color: is_closed ? "gray" : is_connected ? "green" : "red",
+            }}
+          >
+            <b>
+              {is_closed
+                ? "Closed"
+                : is_connected
+                ? "Connected"
+                : "Not Connected"}
+            </b>
+          </span>
           <span>
             <b>ID:</b> {id}
           </span>
@@ -68,13 +61,9 @@ export default function RoomCard(props: IRoom) {
           <span>
             <b>Size:</b> {room_size}
           </span>
-          {users?.length ? (
-            <span>
-              <b>Users:</b> {users?.join(", ") ?? "None"}
-            </span>
-          ) : (
-            <></>
-          )}
+          <span>
+            <b>Users:</b> {users.length ? users?.join(", ") : "..."}
+          </span>
 
           <Space wrap style={{ marginTop: 15 }}>
             <Button
@@ -98,7 +87,7 @@ export default function RoomCard(props: IRoom) {
         </div>
       </Card>
       <Modal
-        title="Basic Modal"
+        title={`Update Room #${id}`}
         open={showModal}
         onOk={() => setShowModal(false)}
         onCancel={() => setShowModal(false)}

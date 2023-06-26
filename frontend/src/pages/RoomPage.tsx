@@ -31,7 +31,7 @@ export default function RoomPage() {
       <RoomListing list={roomList ?? []} />
 
       <Modal
-        title="Basic Modal"
+        title="Create Room"
         open={isModalOpen}
         onOk={handleModalClose}
         onCancel={handleModalClose}

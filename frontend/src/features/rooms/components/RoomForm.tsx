@@ -60,6 +60,7 @@ export default function RoomForm(props: RoomFormProps) {
           name="name"
           rules={[
             { required: true, message: "Please input the name of the room." },
+            { max: 50, message: "50 max character." },
           ]}
         >
           <Input />
