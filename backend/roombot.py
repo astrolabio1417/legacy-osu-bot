@@ -58,7 +58,6 @@ class Room:
         beatmap_stats = [
             ("star", self.beatmap.star),
             ("approach rate", self.beatmap.ar),
-            ("overall difficulty", self.beatmap.od),
             ("circle size", self.beatmap.cs),
         ]
 
@@ -336,16 +335,13 @@ class Room:
 
         if not bm:
             # no beatmap found
-            self.irc.send_private(self.room_id, "Beatmap Fetch Error")
+            self.irc.send_private(self.room_id, f"!mp map {self.beatmap.current} {self.play_mode.value} | Beatmap Fetch Error!")
             return
 
         beatmapset, beatmap = bm
 
         if self.beatmap.force_stat and self.beatmap.current:
-            errors = self.beatmap.check_beatmap(beatmap)
-
-            if beatmap.get("mode_int") != self.play_mode.value:
-                errors.append(("Play Mode"))
+            errors = self.beatmap.get_beatmap_errors(beatmap, self.play_mode)
 
             if errors:
                 self.irc.send_private(

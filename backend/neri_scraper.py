@@ -205,14 +205,14 @@ def remove_unusable_keys_from_bmset(beatmapset: BeatmapSetDict) -> BeatmapSetDic
         "passcount",
     ]
 
-    for i in unusable_beatmapset_keys:
-        if i in beatmapset:
-            beatmapset.pop(i)  # type: ignore
+    for beatmapset_key in unusable_beatmapset_keys:
+        if beatmapset_key in beatmapset:
+            beatmapset.pop(beatmapset_key)  # type: ignore
 
         for beatmap in beatmapset["beatmaps"]:
-            for bk in unusable_beatmap_keys:
-                if bk in beatmap:
-                    del beatmap[bk]  # type: ignore
+            for beatmap_key in unusable_beatmap_keys:
+                if beatmap_key in beatmap:
+                    del beatmap[beatmap_key]  # type: ignore
 
     return beatmapset
 

@@ -1,7 +1,7 @@
 import random
 from dataclasses import dataclass, field
 from typing import Any, Optional
-
+from bot_enums import RANK_STATUS, PLAY_MODE
 from neri_scraper import neri_search, NeriSetting
 from bot_typing import BeatmapDict, BeatmapSetDict
 from scraper import fetch_beatmap
@@ -12,9 +12,16 @@ class RoomBeatmap:
     star: tuple[float, float] = (0.00, 10.00)
     ar: tuple[float, float] = (0.00, 10.00)
     cs: tuple[float, float] = (0.00, 10.00)
-    od: tuple[float, float] = (0.00, 10.00)
     length: tuple[int, int] = (0, 1000000)
     bpm: tuple[int, int] = (0, 200)
+    rank_status: list[RANK_STATUS] = field(
+        default_factory=lambda: [
+            RANK_STATUS.APPROVED,
+            RANK_STATUS.RANKED,
+            RANK_STATUS.LOVED,
+            RANK_STATUS.QUALIFIED,
+        ]
+    )
     current: int = 0
     current_set: int = 0
     lists: list[BeatmapDict] = field(default_factory=list)
@@ -26,9 +33,9 @@ class RoomBeatmap:
             "star": self.star,
             "ar": self.ar,
             "cs": self.cs,
-            "od": self.od,
             "length": self.length,
             "bpm": self.bpm,
+            "rank_status": [rank.name for rank in self.rank_status],
             "current": self.current,
             "current_set": self.current_set,
             "force_stat": self.force_stat,
@@ -42,7 +49,6 @@ class RoomBeatmap:
         star: Optional[tuple[float, float]] = None,
         ar: Optional[tuple[float, float]] = None,
         cs: Optional[tuple[float, float]] = None,
-        od: Optional[tuple[float, float]] = None,
         length: Optional[tuple[int, int]] = None,
         bpm: Optional[tuple[int, int]] = None,
         force_stat: Optional[bool] = None,
@@ -51,16 +57,16 @@ class RoomBeatmap:
         self.star = star or self.star
         self.ar = ar or self.ar
         self.cs = cs or self.cs
-        self.od = od or self.od
         self.length = length or self.length
         self.bpm = bpm or self.bpm
         self.force_stat = force_stat or self.force_stat
         self.asset_filename = asset_filename or self.asset_filename
 
     def setattrs(self, **kwargs: dict[str, Any]) -> None:
-        for k, v in kwargs.items():
+        for key, value in kwargs.items():
             try:
-                setattr(self, k, v)
+                if hasattr(self, key):
+                    setattr(self, key, value)
             except AttributeError:
                 pass
 
@@ -74,26 +80,23 @@ class RoomBeatmap:
                 length=self.length,
                 bpm=self.bpm,
                 ar=self.ar,
+                s=",".join([str(rank.value) for rank in self.rank_status]),
             ),
         )
         beatmaps: list[BeatmapDict] = []
 
         for beatmapset in beatmapsets:
             for beatmap in reversed(beatmapset.get("beatmaps", [])):
-                if (
-                    play_mode != beatmap.get("mode_int")
-                    or not self.check_star(beatmap.get("difficulty_rating", 0))
-                    or not self.check_ar(beatmap.get("ar", 0))
-                    or not self.check_bpm(beatmap.get("bpm", 0))
-                    or not self.check_length(beatmap.get("total_length", 0))
-                    or not self.check_cs(beatmap.get("cs", 0))
-                ):
+                errors = self.get_beatmap_errors(beatmap, play_mode)
+
+                if errors:
                     continue
 
                 beatmap["difficulty_title"] = str(beatmap.get("version", ""))
                 beatmap[
                     "title"
                 ] = f"{beatmapset['title']} {beatmap['difficulty_title']}"
+                # select one beatmap per beatmapset
                 beatmaps.append(beatmap)
                 break
 
@@ -182,8 +185,8 @@ class RoomBeatmap:
     def check_length(self, length: int) -> bool:
         return self.check_is_in_range(length, self.length[0], self.length[1])
 
-    def check_od(self, od: float) -> bool:
-        return self.check_is_in_range(od, self.od[0], self.od[1])
+    def check_rank(self, status: int) -> bool:
+        return status in [status.value for status in self.rank_status]
 
     def get_beatmap(
         self, url: str, beatmap_id: int
@@ -199,35 +202,44 @@ class RoomBeatmap:
 
         return None
 
-    def check_beatmap(self, beatmap: BeatmapDict) -> list[str]:
+    def get_beatmap_errors(self, beatmap: BeatmapDict, mode_int: int) -> list[str]:
         """return errors"""
         errors: list[str] = []
 
         if not beatmap:
             return False
 
-        if beatmap:
-            star = self.check_star(beatmap.get("difficulty_rating", 0))
-            ar = self.check_ar(beatmap.get("ar", 0))
-            bpm = self.check_bpm(beatmap.get("bpm", 0))
-            length = self.check_length(beatmap.get("total_length", 0))
-            cs = self.check_cs(beatmap.get("cs", 0))
+        mode = beatmap.get("mode_int") == mode_int
+        star = self.check_star(beatmap.get("difficulty_rating", 0))
+        ar = self.check_ar(beatmap.get("ar", 0))
+        bpm = self.check_bpm(beatmap.get("bpm", 0))
+        length = self.check_length(beatmap.get("total_length", 0))
+        cs = self.check_cs(beatmap.get("cs", 0))
+        rank = self.check_rank(beatmap.get("ranked", 1))
 
-            print("star: ", star)
-            print("ar: ", ar)
-            print("bpm: ", bpm)
-            print("length: ", length)
-            print("cs: ", cs)
+        play_error = f"Play Mode {PLAY_MODE(beatmap.get('mode_int', -9)).name} != {PLAY_MODE(mode_int).name}"
+        star_error = (
+            f"Star {beatmap.get('difficulty_rating')} != {self.star[0]}-{self.star[1]}*"
+        )
+        ar_error = f"AR {beatmap.get('ar')} != {self.ar[0]}-{self.ar[1]}"
+        bpm_error = f"BPM {beatmap.get('bpm')} != {self.bpm[0]}-{self.bpm[1]}"
+        length_error = (
+            f"Length {beatmap.get('total_length')} != {self.length[0]}-{self.length[1]}"
+        )
+        cs_error = f"CS {beatmap.get('cs')} != {self.cs[0]}-{self.cs[1]}"
+        rank_error = f"Rank Status {RANK_STATUS(beatmap.get('ranked', -9)).name} != [{' | '.join([rank.name for rank in self.rank_status])}]"
 
-            for name, value in [
-                ("Star", star),
-                ("AR", ar),
-                ("BPM", bpm),
-                ("Length", length),
-                ("Circle Size", cs),
-            ]:
-                if not value:
-                    errors.append(name)
+        for name, is_valid in [
+            (play_error, mode),
+            (star_error, star),
+            (ar_error, ar),
+            (bpm_error, bpm),
+            (length_error, length),
+            (cs_error, cs),
+            (rank_error, rank),
+        ]:
+            if not is_valid:
+                errors.append(name)
 
         return errors
 

@@ -5,14 +5,15 @@ import threading
 from irc import OsuIrc
 from roombot import Room, RoomBot
 from beatmaps import RoomBeatmap
-from bot_enums import BOT_MODE, TEAM_MODE, SCORE_MODE, PLAY_MODE
+from bot_enums import BOT_MODE, TEAM_MODE, SCORE_MODE, PLAY_MODE, RANK_STATUS
 from roombot import Room
 from flask_cors import CORS
 from helpers import (
     convert_to_tuples,
-    enum_parser,
+    room_enum_parser,
     extract_enum,
     get_user_credentials,
+    beatmap_enum_parser,
 )
 
 app = Flask(__name__, static_folder="dist")
@@ -35,9 +36,9 @@ except KeyboardInterrupt:
 
 def create_room(data: Any) -> tuple[dict[str, Any], int]:
     beatmap = data.pop("beatmap", {})
-
+    beatmap_enum_parser(beatmap)
     convert_to_tuples(beatmap)
-    enum_parser(data)
+    room_enum_parser(data)
 
     data["irc"] = irc
     data["beatmap"] = RoomBeatmap(**beatmap)
@@ -49,9 +50,9 @@ def create_room(data: Any) -> tuple[dict[str, Any], int]:
 
 def update_room(unique_id: str, data: Any) -> tuple[dict[str, Any], int]:
     beatmap = data.pop("beatmap", {})
-
+    beatmap_enum_parser(beatmap)
     convert_to_tuples(beatmap)
-    enum_parser(data)
+    room_enum_parser(data)
 
     data["beatmap"] = beatmap
 
@@ -119,6 +120,7 @@ def bot_enums() -> Any:
         "TEAM_MODE": extract_enum(TEAM_MODE),
         "SCORE_MODE": extract_enum(SCORE_MODE),
         "PLAY_MODE": extract_enum(PLAY_MODE),
+        "RANK_STATUS": extract_enum(RANK_STATUS),
     }
 
 

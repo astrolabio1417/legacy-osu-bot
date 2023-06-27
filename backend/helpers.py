@@ -1,7 +1,7 @@
 import json
 import os
 from typing import Any, TypedDict
-from bot_enums import BOT_MODE, PLAY_MODE, SCORE_MODE, TEAM_MODE
+from bot_enums import BOT_MODE, PLAY_MODE, SCORE_MODE, TEAM_MODE, RANK_STATUS
 
 
 class UserCredentialsDict(TypedDict):
@@ -44,7 +44,23 @@ def convert_to_tuples(data: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
-def enum_parser(data: dict[str, Any]) -> dict[str, Any]:
+def beatmap_enum_parser(beatmap: dict[str, Any]) -> dict[str, Any]:
+    if "rank_status" in beatmap:
+        rank_status = []
+
+        for enum_key in beatmap["rank_status"]:
+            try:
+                rank_status.append(RANK_STATUS[enum_key])
+            except ValueError as err:
+                print("Rank enum key error", err)
+                pass
+
+        beatmap["rank_status"] = rank_status
+
+    return beatmap
+
+
+def room_enum_parser(room: dict[str, Any]) -> dict[str, Any]:
     room_enums = {
         "bot_mode": BOT_MODE,
         "play_mode": PLAY_MODE,
@@ -52,16 +68,15 @@ def enum_parser(data: dict[str, Any]) -> dict[str, Any]:
         "score_mode": SCORE_MODE,
     }
 
-    for key, value in data.items():
-        enum_value = room_enums.get(key)
+    for room_key, enum in room_enums.items():
+        if room_key not in room:
+            continue
+        try:
+            room[room_key] = enum[room[room_key]]
+        except KeyError:
+            room.pop(room_key)
 
-        if enum_value:
-            try:
-                data[key] = enum_value[value]
-            except KeyError:
-                data.pop(key)
-
-    return data
+    return room
 
 
 def extract_enum(e: Any) -> list[str]:
