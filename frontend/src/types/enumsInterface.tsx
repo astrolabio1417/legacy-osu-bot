@@ -3,4 +3,5 @@ export interface IEnumsResponse {
   PLAY_MODE: string[];
   SCORE_MODE: string[];
   TEAM_MODE: string[];
+  RANK_STATUS: string[];
 }

@@ -9,9 +9,9 @@ export interface IRoomForm {
     star: [number, number];
     cs: [number, number];
     ar: [number, number];
-    od: [number, number];
     length: [number, number];
     bpm: [number, number];
+    rank_status: string[];
     force_stat: boolean;
   };
 }

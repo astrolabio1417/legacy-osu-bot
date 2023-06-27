@@ -31,10 +31,10 @@ export default function RoomForm(props: RoomFormProps) {
     beatmap: {
       star: [0, 10],
       cs: [0, 10],
-      od: [0, 10],
       ar: [0, 10],
       bpm: [0, 200],
       length: [60, 180],
+      rank_status: ["RANKED", "APPROVED", "QUALIFIED", "LOVED"],
       force_stat: false,
     },
   };
@@ -118,6 +118,16 @@ export default function RoomForm(props: RoomFormProps) {
           <Divider orientation="left">Beatmap Settings</Divider>
         </div>
 
+        <Form.Item label="Rank Status" name={["beatmap", "rank_status"]}>
+          <Select mode="multiple">
+            {enums?.RANK_STATUS?.map((rank) => (
+              <Select.Option key={rank} value={rank}>
+                {rank.replaceAll("_", " ")}
+              </Select.Option>
+            ))}
+          </Select>
+        </Form.Item>
+
         <Form.Item label="Star Rating" name={["beatmap", "star"]}>
           <Slider
             range
@@ -154,19 +164,6 @@ export default function RoomForm(props: RoomFormProps) {
             }}
           />
         </Form.Item>
-        <Form.Item label="Overall difficulty" name={["beatmap", "od"]}>
-          <Slider
-            range
-            min={0.0}
-            max={10.0}
-            step={0.1}
-            marks={{
-              0: 0,
-              10: 10,
-            }}
-          />
-        </Form.Item>
-
         <Form.Item label="Length (in seconds)" name={["beatmap", "length"]}>
           <Slider
             range
