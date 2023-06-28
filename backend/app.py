@@ -18,7 +18,7 @@ from helpers import (
 )
 
 app = Flask(__name__, static_folder="dist")
-app.secret_key = "BAD_SECRET_KEY"
+app.secret_key = os.environ.get("SECRET_KEY", "BAD_SECRET_KEY")
 cors = CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 credentials = get_user_credentials()

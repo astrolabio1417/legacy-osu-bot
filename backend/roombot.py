@@ -639,7 +639,8 @@ class RoomBot:
 
     def create_rooms(self) -> None:
         for room in self.rooms:
-            room.create()
+            if room.closed:
+                room.create()
         return
 
     def join_rooms(self) -> None:
@@ -656,9 +657,6 @@ class RoomBot:
         print("Starting osu IRC")
 
         self.irc.start()
-
-        print("Create and Join Rooms")
-        self.create_rooms()
 
         thread = threading.Thread(target=self.run_message_listener, args=())
         thread.start()

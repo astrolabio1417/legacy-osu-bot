@@ -21,3 +21,4 @@ services:
             - PORT=8000
             - USERNAME=
             - PASSWORD=
+            - SECRET_KEY=\x06~\x9f\x13\x8d;\xbdf\xff\xb4\xa2\xc7l\xac\xc2q>NP\x8f\x8a3\xd8%
