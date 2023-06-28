@@ -1,32 +1,20 @@
 import { Button, Form, Input, Typography } from "antd";
-import { API } from "../data/constants";
-import { toast } from "react-toastify";
+import { login } from "../services/sessionService";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 const { Title } = Typography;
 
 export default function LoginPage() {
+  const navigation = useNavigate()
+  const [loading, setLoading] = useState<boolean>(false)
 
   async function onSubmit(data: {"username": string, "password": string}) {
-    const res = await fetch(`${API}/auth`, {
-      method: "post",
-      body: JSON.stringify(data),
-      credentials: "include",
-      headers: {
-        "accept": "application/json",
-        "content-type": "application/json"
-      }
-    })
-    const jsonRes = await res.json();
-    const {message} = jsonRes ?? {};
-
-    if (res.ok) {
-      toast("Login Success");
-      return
-    }
-    
-    toast(message ?? "Login Failed", {
-      type: "error"
-    })
+    setLoading(true)
+    const isLoggedOn = await login(data.username, data.password)
+    setLoading(false)
+    if (!isLoggedOn) return
+    navigation("/")
   }
 
   return (
@@ -40,7 +28,7 @@ export default function LoginPage() {
           <Input.Password />
         </Form.Item>
         <Form.Item>
-          <Button type="primary" htmlType="submit">
+          <Button loading={loading} type="primary" htmlType="submit">
             Login
           </Button>
         </Form.Item>

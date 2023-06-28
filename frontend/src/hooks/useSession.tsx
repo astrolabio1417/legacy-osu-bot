@@ -7,14 +7,19 @@ const initialSessionState = {
   is_admin: false,
   is_irc_running: false,
 };
+
 export default function useSession() {
   const [session, setSession] = useState({ ...initialSessionState });
 
   useEffect(() => {
+    let isFetching = false;
+
     async function fetchSession() {
+      isFetching = true
       const res = await fetch(`${API}/session`, {
         credentials: "include",
       });
+      isFetching = false
 
       if (res.ok) {
         const data: {
@@ -28,8 +33,8 @@ export default function useSession() {
 
       setSession({ ...initialSessionState });
     }
-
-    fetchSession();
+    
+    setInterval(() => !isFetching && fetchSession(), 1000)
   }, []);
 
   return { session };

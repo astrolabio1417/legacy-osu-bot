@@ -6,6 +6,7 @@ import "./app.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import Navigation from "./features/navigation/components/Navigation";
+import AppContainer from "./components/AppContainer";
 
 
 function App() {
@@ -20,12 +21,12 @@ function App() {
     >
       <BrowserRouter>
         <Navigation />
-        <div style={{maxWidth: 1520, marginInline: "auto"}}>
+        <AppContainer>
           <Routes>
             <Route path="/" element={<RoomPage />}  />
             <Route path="/login-form" element={<LoginPage />} />
           </Routes>
-        </div>
+        </AppContainer>
 
         <ToastContainer
           position="bottom-center"
