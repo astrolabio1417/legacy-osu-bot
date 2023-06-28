@@ -1,5 +1,6 @@
 from __future__ import annotations
 import re
+import threading
 import uuid
 from typing import TYPE_CHECKING, Any, Optional
 from dataclasses import dataclass, field
@@ -335,7 +336,10 @@ class Room:
 
         if not bm:
             # no beatmap found
-            self.irc.send_private(self.room_id, f"!mp map {self.beatmap.current} {self.play_mode.value} | Beatmap Fetch Error!")
+            self.irc.send_private(
+                self.room_id,
+                f"!mp map {self.beatmap.current} {self.play_mode.value} | Beatmap Fetch Error!",
+            )
             return
 
         beatmapset, beatmap = bm
@@ -643,7 +647,11 @@ class RoomBot:
             room.join()
         return
 
-    def start(self) -> None:
+    def run_message_listener(self) -> None:
+        for message in self.irc.message_generator():
+            self.on_message_receive(message)
+
+    def start(self, run_on_thread: int = False) -> threading.Thread:
         """start receiving messages"""
         print("Starting osu IRC")
 
@@ -652,5 +660,10 @@ class RoomBot:
         print("Create and Join Rooms")
         self.create_rooms()
 
-        for message in self.irc.message_generator():
-            self.on_message_receive(message)
+        thread = threading.Thread(target=self.run_message_listener, args=())
+        thread.start()
+
+        if not run_on_thread:
+            thread.join()
+
+        return thread

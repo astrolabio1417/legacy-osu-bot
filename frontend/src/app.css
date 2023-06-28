@@ -1,11 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Oxygen:wght@400;700&display=swap");
 
-h1,
-h2,
-h3,
-h4,
-h5 {
-  font-family: -apple-system, BlinkMacSystemFont, "Oxygen", "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji",
-    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+body {
+  margin: 0;
 }

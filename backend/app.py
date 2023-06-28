@@ -1,7 +1,6 @@
 import os
 from typing import Any
-from flask import Flask, request, send_from_directory
-import threading
+from flask import Flask, request, send_from_directory, session
 from irc import OsuIrc
 from roombot import Room, RoomBot
 from beatmaps import RoomBeatmap
@@ -14,24 +13,20 @@ from helpers import (
     extract_enum,
     get_user_credentials,
     beatmap_enum_parser,
+    is_password_valid,
+    is_username_valid,
 )
 
 app = Flask(__name__, static_folder="dist")
-cors = CORS(app, resources={r"/*": {"origins": "*"}})
+app.secret_key = "BAD_SECRET_KEY"
+cors = CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 credentials = get_user_credentials()
 
 irc = OsuIrc(
-    username=credentials["username"],
-    password=credentials["password"],
+    username=credentials.get("username", ""), password=credentials.get("password", "")
 )
 room_bot = RoomBot(irc=irc)
-
-
-try:
-    threading.Thread(target=room_bot.start, args=()).start()
-except KeyboardInterrupt:
-    irc.close()
 
 
 def create_room(data: Any) -> tuple[dict[str, Any], int]:
@@ -70,6 +65,11 @@ def update_room(unique_id: str, data: Any) -> tuple[dict[str, Any], int]:
 
 
 def delete_room(room_unique_id: str) -> tuple[dict[str, Any], int]:
+    if not is_username_valid(session.get("username", "")) or not is_password_valid(
+        session.get("password", "")
+    ):
+        return {"message": "You are not Authorized user!"}, 401
+
     if not room_unique_id:
         return {"status": 400, "message": "Missing room_id on data"}, 400
 
@@ -85,8 +85,16 @@ def delete_room(room_unique_id: str) -> tuple[dict[str, Any], int]:
 
 @app.route("/room", methods=["GET", "POST", "DELETE", "PUT"])
 def room() -> Any:
+    if not irc.is_running:
+        return {"message": "Irc is not running..."}, 400
+
     if request.method == "GET":
         return room_bot.get_rooms_json(), 200
+
+    if not is_username_valid(session.get("username", "")) or not is_password_valid(
+        session.get("password", "")
+    ):
+        return {"message": "You are not Authorized user!"}, 401
 
     if request.method == "POST":
         return create_room(request.get_json())
@@ -96,6 +104,9 @@ def room() -> Any:
 
 @app.route("/room/<room_unique_id>", methods=["GET", "PUT", "DELETE"])
 def room_view(room_unique_id: str) -> Any:
+    if not irc.is_running:
+        return {"message": "Irc is not running..."}, 400
+
     if request.method == "GET":
         room = room_bot.get_room(unique_id=room_unique_id)
 
@@ -104,6 +115,11 @@ def room_view(room_unique_id: str) -> Any:
 
         return room.get_json(), 200
 
+    if not is_username_valid(session.get("username", "")) or not is_password_valid(
+        session.get("password", "")
+    ):
+        return {"message": "You are not Authorized user!"}, 401
+
     if request.method == "PUT":
         return update_room(room_unique_id, request.get_json())
 
@@ -111,6 +127,60 @@ def room_view(room_unique_id: str) -> Any:
         return delete_room(room_unique_id)
 
     return {}, 400
+
+
+@app.route("/start")
+def start_irc() -> Any:
+    if not is_username_valid(session.get("username", "")) or not is_password_valid(
+        session.get("password", "")
+    ):
+        return {"message": "You are not Authorized user!"}, 401
+
+    if irc.is_running:
+        return {"message": "irc is running..."}, 400
+
+    irc.start()
+    room_bot.start(run_on_thread=True)
+    return {"message": "irc is now running..."}, 200
+
+
+@app.route("/stop")
+def stop_irc() -> Any:
+    if not is_username_valid(session.get("username", "")) or not is_password_valid(
+        session.get("password", "")
+    ):
+        return {"message": "You are not Authorized user!"}, 401
+
+    irc.stop()
+    return {"message": "Irc is dead..."}, 200
+
+
+@app.route("/auth", methods=["POST"])
+def login() -> Any:
+    if request.method != "POST":
+        return {}, 400
+
+    data = request.get_json()
+    username = data.get("username", "")
+    password = data.get("password", "")
+
+    if not is_username_valid(username) or not is_password_valid(password):
+        return {"message": "Invalid username or password"}, 400
+
+    session["username"] = username
+    session["password"] = password
+    session["is_admin"] = True
+
+    return {"message": "ok"}, 200
+
+
+@app.route("/session")
+def get_session() -> Any:
+    return {
+        "username": session.get("username", ""),
+        "is_admin": session.get("is_admin"),
+        "is_irc_running": irc.is_running,
+    }
 
 
 @app.route("/enums")

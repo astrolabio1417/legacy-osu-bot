@@ -81,3 +81,13 @@ def room_enum_parser(room: dict[str, Any]) -> dict[str, Any]:
 
 def extract_enum(e: Any) -> list[str]:
     return [a.name for a in e]
+
+
+def is_username_valid(username: str) -> bool:
+    creds = get_user_credentials()
+    return str(username) == creds.get("username")
+
+
+def is_password_valid(password: str) -> bool:
+    creds = get_user_credentials()
+    return str(password) == creds.get("password")

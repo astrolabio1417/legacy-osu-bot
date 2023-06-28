@@ -24,6 +24,13 @@ class OsuIrc:
 
     def connect(self, timeout: float = 10.0) -> bool:
         print(f"~ Connecting to {self.host}:{self.port}...")
+
+        if not self.username or not self.password:
+            self.is_connected = False
+            print("~ Connection refused! no username or password supplied")
+            time.sleep(1)
+            return self.is_connected
+
         self.irc_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.irc_socket.settimeout(timeout)
 

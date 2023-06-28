@@ -5,6 +5,7 @@ import { API } from "../data/constants";
 export async function createRoom(values: IRoomForm) {
   const res = await fetch(`${API}/room`, {
     method: "POST",
+    credentials: "include",
     body: JSON.stringify(values),
     headers: {
       "content-type": "application/json",
@@ -26,6 +27,7 @@ export async function createRoom(values: IRoomForm) {
 
 export async function deleteRoom(id: string) {
   const res = await fetch(`${API}/room/${id}`, {
+    credentials: "include",
     method: "delete",
   });
 
@@ -42,6 +44,7 @@ export async function deleteRoom(id: string) {
 
 export async function updateRoom(values: IRoomForm, id: string) {
   const res = await fetch(`${API}/room/${id}`, {
+    credentials: "include",
     method: "put",
     body: JSON.stringify(values),
     headers: {
