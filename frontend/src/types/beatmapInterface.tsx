@@ -8,4 +8,5 @@ export interface IBeatmap {
   length: [number, number];
   od: [number, number];
   star: [number, number];
+  rank_status: string[]
 }

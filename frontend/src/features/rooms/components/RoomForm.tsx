@@ -10,6 +10,7 @@ import {
 } from "antd";
 import useEnums from "../../../hooks/useEnums";
 import { IRoomForm } from "../../../types/roomFormInterface";
+import { useState } from "react";
 
 interface RoomFormProps {
   initialValues?: IRoomForm;
@@ -20,6 +21,7 @@ interface RoomFormProps {
 export default function RoomForm(props: RoomFormProps) {
   const { enums } = useEnums();
   const [form] = Form.useForm();
+  const [loading, setLoading] = useState<boolean>(false)
 
   const defaultInitialValues: IRoomForm = {
     name: "",
@@ -40,7 +42,9 @@ export default function RoomForm(props: RoomFormProps) {
   };
 
   async function onFinish(values: IRoomForm) {
+    setLoading(true)
     const ok = await props.onFinished?.(values);
+    setLoading(false)
     ok && props.resetOnSubmit && form.resetFields();
   }
 
@@ -193,7 +197,7 @@ export default function RoomForm(props: RoomFormProps) {
         </Form.Item>
 
         <Form.Item>
-          <Button type="primary" htmlType="submit">
+          <Button type="primary" htmlType="submit" loading={loading}>
             Submit
           </Button>
         </Form.Item>

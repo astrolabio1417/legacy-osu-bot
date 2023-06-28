@@ -22,6 +22,13 @@ export default function RoomCard(props: IRoom) {
     id,
   } = room ?? {};
   const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function onDelete(id: string) {
+    setLoading(true)
+    await deleteRoom(id)
+    setLoading(false)
+  }
 
   return (
     <List.Item>
@@ -79,7 +86,8 @@ export default function RoomCard(props: IRoom) {
               type="primary"
               danger
               disabled={is_closed || !is_connected || !is_created}
-              onClick={() => deleteRoom(id)}
+              loading={loading}
+              onClick={() => onDelete(id)}
             >
               Delete
             </Button>

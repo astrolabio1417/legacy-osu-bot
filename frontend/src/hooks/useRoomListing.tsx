@@ -6,16 +6,19 @@ export default function useRoomListing() {
   const [roomList, setRoomList] = useState<IRoom[]>([]);
 
   useEffect(() => {
-    async function fetchRooms() {
-      const res = await fetch(`${API}/room`);
+    let isFetching = false;
 
+    async function fetchRooms() {
+      isFetching = true
+      const res = await fetch(`${API}/room`);
+      isFetching = false      
       if (!res.ok) return;
 
       const rooms: IRoom[] = await res.json();
       setRoomList(rooms);
     }
 
-    const fetchInterval = setInterval(() => fetchRooms(), 1000);
+    const fetchInterval = setInterval(() => !isFetching && fetchRooms(), 1000);
 
     return () => {
       clearInterval(fetchInterval);
