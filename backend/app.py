@@ -155,7 +155,7 @@ def stop_irc() -> Any:
     return {"message": "Irc is dead..."}, 200
 
 
-@app.route("/auth", methods=["POST"])
+@app.route("/session/login", methods=["POST"])
 def login() -> Any:
     if request.method != "POST":
         return {}, 400
@@ -173,6 +173,13 @@ def login() -> Any:
 
     return {"message": "ok"}, 200
 
+@app.route("/session/logout", methods=["POST"])
+def logout() -> Any:
+    if request.method == 'POST':
+        session.clear()
+        return {}, 204
+    
+    return {}, 400
 
 @app.route("/session")
 def get_session() -> Any:

@@ -19,6 +19,9 @@ def get_user_credentials() -> UserCredentialsDict:
             "password": password,
         }
 
+    if not os.path.exists("config.json"):
+        raise KeyError("Env vars or config.json is required!")
+
     with open("config.json", "r") as f:
         configuration = json.loads(f.read())
 
