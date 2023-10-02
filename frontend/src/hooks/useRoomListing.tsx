@@ -9,16 +9,23 @@ export default function useRoomListing() {
     let isFetching = false;
 
     async function fetchRooms() {
-      isFetching = true
-      const res = await fetch(`${API}/room`);
-      isFetching = false      
-      if (!res.ok) return;
+      if (isFetching) return;
+      isFetching = true;
 
-      const rooms: IRoom[] = await res.json();
-      setRoomList(rooms);
+      try {
+        const res = await fetch(`${API}/room`);
+        if (!res.ok) return;
+        const rooms: IRoom[] = await res.json();
+        setRoomList(rooms);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        isFetching = false;
+      }
     }
 
-    const fetchInterval = setInterval(() => !isFetching && fetchRooms(), 1000);
+    fetchRooms();
+    const fetchInterval = setInterval(() => fetchRooms(), 1000);
 
     return () => {
       clearInterval(fetchInterval);

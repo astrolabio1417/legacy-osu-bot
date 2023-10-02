@@ -14,7 +14,6 @@ export interface IRoom {
   play_mode: IPlayMode;
   score_mode: IScoreMode;
   team_mode: ITeamMode;
-  is_closed: boolean;
   is_configured: boolean;
   is_connected: boolean;
   is_created: boolean;

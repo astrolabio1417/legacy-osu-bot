@@ -21,6 +21,7 @@ COPY ./backend .
 COPY --from=builder /usr/src/frontend/dist /usr/src/backend/dist
 
 RUN pip install -r requirements.txt
+EXPOSE 8080
 
 RUN ["chmod", "+x", "/usr/src/backend/entrypoint.sh"]
 ENTRYPOINT [ "/usr/src/backend/entrypoint.sh" ]

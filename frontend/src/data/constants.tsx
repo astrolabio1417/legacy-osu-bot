@@ -2,15 +2,7 @@
 
 export const API = import.meta.env.VITE_API ?? `http://localhost:8000/`;
 
-export const BEATMAP_KEYS = [
-  "star",
-  "cs",
-  "ar",
-  "od",
-  "length",
-  "bpm",
-  "force_stat",
-];
+export const BEATMAP_KEYS = ["star", "cs", "ar", "od", "length", "bpm"];
 
 export const ROOM_KEYS = [
   "room_size",

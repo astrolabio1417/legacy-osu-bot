@@ -1,21 +1,22 @@
 import os
 from typing import Any
 from flask import Flask, request, send_from_directory, session
-from irc import OsuIrc
-from roombot import Room, RoomBot
-from beatmaps import RoomBeatmap
-from bot_enums import BOT_MODE, TEAM_MODE, SCORE_MODE, PLAY_MODE, RANK_STATUS
-from roombot import Room
+from bot.irc import OsuIrc
+from bot.roommanager import RoomManager
+from bot.room import Room
+from bot.beatmap import RoomBeatmap
+from bot.enums import BOT_MODE, TEAM_MODE, SCORE_MODE, PLAY_MODE, RANK_STATUS, RoomData
 from flask_cors import CORS
-from helpers import (
-    convert_to_tuples,
-    room_enum_parser,
+from bot.helpers import (
+    parse_room_data,
     extract_enum,
     get_user_credentials,
-    beatmap_enum_parser,
     is_password_valid,
     is_username_valid,
 )
+from app_enums import BotEnums, LoginResponse, MessageResponse, Session
+from ossapi.enums import BeatmapsetSearchGenre, BeatmapsetSearchLanguage
+
 
 app = Flask(__name__, static_folder="dist")
 app.secret_key = os.environ.get("SECRET_KEY", "BAD_SECRET_KEY")
@@ -26,98 +27,94 @@ credentials = get_user_credentials()
 irc = OsuIrc(
     username=credentials.get("username", ""), password=credentials.get("password", "")
 )
-room_bot = RoomBot(irc=irc)
+
+roommanager = RoomManager(irc=irc)
 
 
-def create_room(data: Any) -> tuple[dict[str, Any], int]:
-    beatmap = data.pop("beatmap", {})
-    beatmap_enum_parser(beatmap)
-    convert_to_tuples(beatmap)
-    room_enum_parser(data)
+def create_room(data: Any) -> tuple[RoomData | MessageResponse, int]:
+    try:
+        parse_room_data(data)
+    except Exception as e:
+        return {"message": str(e)}, 400
 
     data["irc"] = irc
-    data["beatmap"] = RoomBeatmap(**beatmap)
-    new_room = room_bot.add_room(Room(**data))
+    data["beatmap"] = RoomBeatmap(**data.pop("beatmap"))
+    room = Room(**data)
+    new_room = roommanager.add_room(room)
     new_room.create()
 
     return new_room.get_json(), 201
 
 
-def update_room(unique_id: str, data: Any) -> tuple[dict[str, Any], int]:
-    beatmap = data.pop("beatmap", {})
-    beatmap_enum_parser(beatmap)
-    convert_to_tuples(beatmap)
-    room_enum_parser(data)
-
-    data["beatmap"] = beatmap
-
+def update_room(unique_id: str, data: Any) -> tuple[MessageResponse | RoomData, int]:
     if not unique_id:
-        return {"status": 400, "message": "Missing room_id on data"}, 400
+        return {"message": "Missing room_id on data"}, 400
 
-    room = room_bot.get_room(unique_id=unique_id)
+    try:
+        parse_room_data(data)
+    except Exception as e:
+        return {"message": str(e)}, 400
+
+    room = roommanager.get_room(unique_id=unique_id)
 
     if not room:
-        return {"status": 400, "message": "No room found!"}, 400
+        return {"message": "No room found!"}, 400
 
-    room.setattrs(**data)
+    room.configure(**data)
 
     return room.get_json(), 200
 
 
-def delete_room(room_unique_id: str) -> tuple[dict[str, Any], int]:
-    if not is_username_valid(session.get("username", "")) or not is_password_valid(
-        session.get("password", "")
-    ):
+def delete_room(room_unique_id: str) -> tuple[MessageResponse | RoomData, int]:
+    if not session.get("is_admin"):
         return {"message": "You are not Authorized user!"}, 401
 
     if not room_unique_id:
-        return {"status": 400, "message": "Missing room_id on data"}, 400
+        return {"message": "Missing room_id"}, 400
 
-    room = room_bot.get_room(unique_id=room_unique_id)
+    room = roommanager.get_room(unique_id=room_unique_id)
 
     if not room:
-        return {"status": 400, "message": "No room found!"}, 400
+        return {"message": "No room found!"}, 400
 
     room.send_close()
 
-    return {"id": room_unique_id}, 204
+    return {"message": "Room has been deleted"}, 204
 
 
 @app.route("/room", methods=["GET", "POST", "DELETE", "PUT"])
-def room() -> Any:
+def room() -> tuple[MessageResponse | RoomData | list[RoomData], int]:
     if not irc.is_running:
         return {"message": "Irc is not running..."}, 400
 
     if request.method == "GET":
-        return room_bot.get_rooms_json(), 200
-
-    if not is_username_valid(session.get("username", "")) or not is_password_valid(
-        session.get("password", "")
-    ):
-        return {"message": "You are not Authorized user!"}, 401
+        return roommanager.get_rooms_json(), 200
 
     if request.method == "POST":
+        print(session)
+        print(session.get("is_admin"))
+        if not session.get("is_admin"):
+            return {"message": "You are not Authorized user!"}, 401
+
         return create_room(request.get_json())
 
-    return {"status": 400, "message": "Wrong Method!"}, 400
+    return {"message": "Wrong Method!"}, 400
 
 
 @app.route("/room/<room_unique_id>", methods=["GET", "PUT", "DELETE"])
-def room_view(room_unique_id: str) -> Any:
+def room_view(room_unique_id: str) -> tuple[MessageResponse | RoomData, int]:
     if not irc.is_running:
         return {"message": "Irc is not running..."}, 400
 
     if request.method == "GET":
-        room = room_bot.get_room(unique_id=room_unique_id)
+        room = roommanager.get_room(unique_id=room_unique_id)
 
         if not room:
-            return {"message": "No room found", "status": 400}, 400
+            return {"message": "No room found"}, 400
 
         return room.get_json(), 200
 
-    if not is_username_valid(session.get("username", "")) or not is_password_valid(
-        session.get("password", "")
-    ):
+    if not session.get("is_admin"):
         return {"message": "You are not Authorized user!"}, 401
 
     if request.method == "PUT":
@@ -126,39 +123,35 @@ def room_view(room_unique_id: str) -> Any:
     if request.method == "DELETE":
         return delete_room(room_unique_id)
 
-    return {}, 400
+    return {"message": "Wrong Method"}, 400
 
 
 @app.route("/start")
 def start_irc() -> Any:
-    if not is_username_valid(session.get("username", "")) or not is_password_valid(
-        session.get("password", "")
-    ):
+    if not session.get("is_admin"):
         return {"message": "You are not Authorized user!"}, 401
 
     if irc.is_running:
-        return {"message": "irc is running..."}, 400
+        return {"message": "IRC is already running..."}, 400
 
     irc.start()
-    room_bot.start(run_on_thread=True)
-    return {"message": "irc is now running..."}, 200
+    roommanager.start(run_on_thread=True)
+    return {"message": "IRC is now running..."}, 200
 
 
 @app.route("/stop")
-def stop_irc() -> Any:
-    if not is_username_valid(session.get("username", "")) or not is_password_valid(
-        session.get("password", "")
-    ):
+def stop_irc() -> tuple[MessageResponse, int]:
+    if not session.get("is_admin"):
         return {"message": "You are not Authorized user!"}, 401
 
     irc.stop()
-    return {"message": "Irc is dead..."}, 200
+    return {"message": "IRC is now stopped..."}, 200
 
 
 @app.route("/session/login", methods=["POST"])
-def login() -> Any:
+def login() -> tuple[LoginResponse | MessageResponse, int]:
     if request.method != "POST":
-        return {}, 400
+        return {"message": "Wrong Method!"}, 400
 
     data = request.get_json()
     username = data.get("username", "")
@@ -171,34 +164,46 @@ def login() -> Any:
     session["password"] = password
     session["is_admin"] = True
 
-    return {"message": "ok"}, 200
+    return {
+        "message": "ok",
+        "is_admin": True,
+        "is_irc_running": irc.is_running,
+        "username": username,
+    }, 200
+
 
 @app.route("/session/logout", methods=["POST"])
-def logout() -> Any:
-    if request.method == 'POST':
+def logout() -> tuple[dict[str, Any], int]:
+    if request.method == "POST":
         session.clear()
         return {}, 204
-    
+
     return {}, 400
 
+
 @app.route("/session")
-def get_session() -> Any:
+def get_session() -> Session:
     return {
         "username": session.get("username", ""),
-        "is_admin": session.get("is_admin"),
+        "is_admin": session.get("is_admin") is True,
         "is_irc_running": irc.is_running,
     }
 
 
+Enums: BotEnums = {
+    "BOT_MODE": extract_enum(BOT_MODE),
+    "TEAM_MODE": extract_enum(TEAM_MODE),
+    "SCORE_MODE": extract_enum(SCORE_MODE),
+    "PLAY_MODE": extract_enum(PLAY_MODE),
+    "RANK_STATUS": extract_enum(RANK_STATUS),
+    "BEATMAP_GENRE": extract_enum(BeatmapsetSearchGenre),
+    "BEATMAP_LANGUAGE": extract_enum(BeatmapsetSearchLanguage),
+}
+
+
 @app.route("/enums")
-def bot_enums() -> Any:
-    return {
-        "BOT_MODE": extract_enum(BOT_MODE),
-        "TEAM_MODE": extract_enum(TEAM_MODE),
-        "SCORE_MODE": extract_enum(SCORE_MODE),
-        "PLAY_MODE": extract_enum(PLAY_MODE),
-        "RANK_STATUS": extract_enum(RANK_STATUS),
-    }
+def bot_enums() -> BotEnums:
+    return Enums
 
 
 @app.route("/", defaults={"path": ""})
@@ -212,4 +217,5 @@ def serve(path: str) -> Any:
 
 if __name__ == "__main__":
     PORT = int(os.environ.get("PORT", 8000))
-    app.run(host="0.0.0.0", port=PORT)
+    DEBUG = bool(os.environ.get("DEBUG") == "True")
+    app.run(host="0.0.0.0", port=PORT, debug=DEBUG)

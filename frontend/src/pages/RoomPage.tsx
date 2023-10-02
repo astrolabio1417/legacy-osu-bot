@@ -1,4 +1,4 @@
-import { Button, Divider, Modal } from "antd";
+import { Button, Modal } from "antd";
 import { useState } from "react";
 import { createRoom } from "../services/roomService";
 import { RoomForm, RoomListing } from "../features/rooms";
@@ -18,9 +18,7 @@ export default function RoomPage() {
 
   return (
     <div>
-      <Divider orientation="left">
-        <h2>Room Listing</h2>
-      </Divider>
+      <h1>Room Listing</h1>
 
       <div style={{ marginBottom: 30 }}>
         <Button type="dashed" size="large" onClick={handleModalOpen}>

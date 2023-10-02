@@ -4,4 +4,6 @@ export interface IEnumsResponse {
   SCORE_MODE: string[];
   TEAM_MODE: string[];
   RANK_STATUS: string[];
+  BEATMAP_GENRE: string[];
+  BEATMAP_LANGUAGE: string[];
 }

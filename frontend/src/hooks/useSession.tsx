@@ -15,11 +15,11 @@ export default function useSession() {
     let isFetching = false;
 
     async function fetchSession() {
-      isFetching = true
+      isFetching = true;
       const res = await fetch(`${API}/session`, {
         credentials: "include",
       });
-      isFetching = false
+      isFetching = false;
 
       if (res.ok) {
         const data: {
@@ -33,8 +33,10 @@ export default function useSession() {
 
       setSession({ ...initialSessionState });
     }
-    
-    setInterval(() => !isFetching && fetchSession(), 1000)
+
+    const interval = setInterval(() => !isFetching && fetchSession(), 1000);
+
+    return () => clearInterval(interval);
   }, []);
 
   return { session };

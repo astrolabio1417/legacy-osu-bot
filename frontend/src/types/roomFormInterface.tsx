@@ -12,6 +12,7 @@ export interface IRoomForm {
     length: [number, number];
     bpm: [number, number];
     rank_status: string[];
-    force_stat: boolean;
+    genre: string;
+    language: string;
   };
 }

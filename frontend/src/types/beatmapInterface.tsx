@@ -4,9 +4,8 @@ export interface IBeatmap {
   cs: [number, number];
   current: number;
   current_set: number;
-  force_stat: boolean;
   length: [number, number];
   od: [number, number];
   star: [number, number];
-  rank_status: string[]
+  rank_status: string[];
 }

@@ -26,20 +26,24 @@ export async function createRoom(values: IRoomForm) {
 }
 
 export async function deleteRoom(id: string) {
-  const res = await fetch(`${API}/room/${id}`, {
-    credentials: "include",
-    method: "delete",
-  });
-
-  if (!res.ok) {
-    toast("Deletion Failed", {
-      type: "error",
+  try {
+    const res = await fetch(`${API}/room/${id}`, {
+      credentials: "include",
+      method: "delete",
     });
 
-    return;
-  }
+    if (!res.ok) {
+      toast("Deletion Failed", {
+        type: "error",
+      });
 
-  toast("Deletion Success");
+      return;
+    }
+
+    toast("Request to Deleted has been sent");
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 export async function updateRoom(values: IRoomForm, id: string) {

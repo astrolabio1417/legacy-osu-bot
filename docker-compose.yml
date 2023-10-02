@@ -1,24 +1,27 @@
 version: "3.8"
 
 services:
-    osu_bot_frontend:
-        build: ./frontend
-        volumes:
-            - ./frontend:/usr/src/frontend
-            - /usr/src/frontend/node_modules
-        ports:
-            - 3000:3000
-        stdin_open: true
-        environment:
-            CHOKIDAR_USEPOLLING: "true"
-    osu_bot_backend:
-        build: ./backend
-        volumes:
-            - ./backend:/usr/src/backend
-        ports:
-            - 8000:8000
-        environment:
-            - PORT=8000
-            - USERNAME=
-            - PASSWORD=
-            - SECRET_KEY=\x06~\x9f\x13\x8d;\xbdf\xff\xb4\xa2\xc7l\xac\xc2q>NP\x8f\x8a3\xd8%
+  osu_bot_frontend:
+    build: ./frontend
+    volumes:
+      - ./frontend:/usr/src/frontend
+      - /usr/src/frontend/node_modules
+    ports:
+      - 3000:3000
+    stdin_open: true
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+  osu_bot_backend:
+    build: ./backend
+    volumes:
+      - ./backend:/usr/src/backend
+    ports:
+      - 8000:8000
+    environment:
+      - PORT=8000
+      - USERNAME=
+      - PASSWORD=
+      - SECRET_KEY=\x06~\x9f\x13\x8d;\xbdf\xff\xb4\xa2\xc7l\xac\xc2q>NP\x8f\x8a3\xd8%
+      - DEBUG=True
+      - CLIENT_ID=
+      - CLIENT_SECRET=

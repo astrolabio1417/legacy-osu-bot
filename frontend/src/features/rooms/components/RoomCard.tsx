@@ -25,9 +25,9 @@ export default function RoomCard(props: IRoom) {
   const [loading, setLoading] = useState(false);
 
   async function onDelete(id: string) {
-    setLoading(true)
-    await deleteRoom(id)
-    setLoading(false)
+    setLoading(true);
+    await deleteRoom(id);
+    setLoading(false);
   }
 
   return (
@@ -75,7 +75,7 @@ export default function RoomCard(props: IRoom) {
           <Space wrap style={{ marginTop: 15 }}>
             <Button
               type="default"
-              disabled={is_closed || !is_connected || !is_created}
+              disabled={!is_connected || !is_created}
               onClick={() => {
                 setShowModal(true);
               }}
@@ -85,7 +85,7 @@ export default function RoomCard(props: IRoom) {
             <Button
               type="primary"
               danger
-              disabled={is_closed || !is_connected || !is_created}
+              disabled={!is_connected || !is_created}
               loading={loading}
               onClick={() => onDelete(id)}
             >

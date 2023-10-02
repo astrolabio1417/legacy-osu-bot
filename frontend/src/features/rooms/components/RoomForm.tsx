@@ -21,7 +21,7 @@ interface RoomFormProps {
 export default function RoomForm(props: RoomFormProps) {
   const { enums } = useEnums();
   const [form] = Form.useForm();
-  const [loading, setLoading] = useState<boolean>(false)
+  const [loading, setLoading] = useState<boolean>(false);
 
   const defaultInitialValues: IRoomForm = {
     name: "",
@@ -34,17 +34,18 @@ export default function RoomForm(props: RoomFormProps) {
       star: [0, 10],
       cs: [0, 10],
       ar: [0, 10],
-      bpm: [0, 200],
-      length: [60, 180],
+      bpm: [0, 300],
+      length: [0, 30 * 60],
       rank_status: ["RANKED", "APPROVED", "QUALIFIED", "LOVED"],
-      force_stat: false,
+      genre: "ANY",
+      language: "ANY",
     },
   };
 
   async function onFinish(values: IRoomForm) {
-    setLoading(true)
+    setLoading(true);
     const ok = await props.onFinished?.(values);
-    setLoading(false)
+    setLoading(false);
     ok && props.resetOnSubmit && form.resetFields();
   }
 
@@ -132,6 +133,26 @@ export default function RoomForm(props: RoomFormProps) {
           </Select>
         </Form.Item>
 
+        <Form.Item label="Genre" name={["beatmap", "genre"]}>
+          <Select>
+            {enums?.BEATMAP_GENRE?.map((genre) => (
+              <Select.Option key={genre} value={genre}>
+                {genre.replaceAll("_", " ")}
+              </Select.Option>
+            ))}
+          </Select>
+        </Form.Item>
+
+        <Form.Item label="Language" name={["beatmap", "language"]}>
+          <Select>
+            {enums?.BEATMAP_LANGUAGE?.map((language) => (
+              <Select.Option key={language} value={language}>
+                {language.replaceAll("_", " ")}
+              </Select.Option>
+            ))}
+          </Select>
+        </Form.Item>
+
         <Form.Item label="Star Rating" name={["beatmap", "star"]}>
           <Slider
             range
@@ -190,10 +211,6 @@ export default function RoomForm(props: RoomFormProps) {
               300: 300,
             }}
           />
-        </Form.Item>
-
-        <Form.Item name={["beatmap", "force_stat"]} valuePropName="checked">
-          <Checkbox>Force to use Beatmap Settings</Checkbox>
         </Form.Item>
 
         <Form.Item>
