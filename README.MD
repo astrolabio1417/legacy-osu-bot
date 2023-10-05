@@ -9,14 +9,13 @@
 - HOW TO CREATE PASSWORD
 
 ```
-    then create your own "Legacy API" and copy your "SERVER PASSWORD"
-
+    Create "Legacy API" and copy your "SERVER PASSWORD"
 ```
 
 - HOW TO CREATE CLIENT ID/SESSION
 
 ```
-   then create your own OAuth and copy your "CLIENT ID" and "CLIENT SECRET"
+   Create "OAuth" and copy your "CLIENT ID" and "CLIENT SECRET"
 ```
 
 ##### ENVIRONMENT
