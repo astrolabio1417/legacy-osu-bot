@@ -1,30 +1,30 @@
-# legacy | osubot | host rotate | map rotate
+# legacy | osubot | auto host rotate | auto beatmap rotate
 
-##### TEAM_MODE
+#### HOW TO CREATE CREDENTIALS
 
-- 0: "HeadToHead"
-- 1: "TagCoop"
-- 2: "TeamVs"
-- 3: "TagTeamVs"
+```
+    go to your account settings (https://osu.ppy.sh/home/account/edit)
+```
 
-##### SCORE_MODE
+- HOW TO CREATE PASSWORD
 
-- 0: "Score"
-- 1: "Accuracy"
-- 2: "Combo"
-- 3: "ScoreV2"
+```
+    then create your own "Legacy API" and copy your "SERVER PASSWORD"
 
-##### PLAY_MODE
+```
 
-- 0: "osu!"
-- 1: "Taiko"
-- 2: "Catch the Beat"
-- 3: "osu!Mania"
+- HOW TO CREATE CLIENT ID/SESSION
 
-##### BOT_MODE
+```
+   then create your own OAuth and copy your "CLIENT ID" and "CLIENT SECRET"
+```
 
-- 0: "AutoHost"
-- 1: "AutoRotateMap"
+##### ENVIRONMENT
+
+- USERNAME: your osu username
+- PASSWORD: legacy api server password
+- CLIENT_ID: oauth client id
+- CLIENT_SECRET: oauth client secret
 
 # DOCKER SETUP
 
@@ -37,3 +37,9 @@ docker compose -f "docker-compose.yml" up -d --build
 ```
 
 - Visit local link http://localhost:3000/
+
+# HOW TO USE
+
+- Login to your account using your username and server password
+- Toggle ON IRC Button on Nav bar
+- Create New Room
