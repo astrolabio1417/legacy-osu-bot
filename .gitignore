@@ -1,15 +1,2 @@
-env
-.env
-test.txt
-test.py
-config.json
-.mypy_cache
-__pycache__
-logs
-chimu_parser.py
-files
-chimu_item.json
-old_enums.py
-scraper.test.py
-beatmapsets_backup
 .venv
+.mypy_cache

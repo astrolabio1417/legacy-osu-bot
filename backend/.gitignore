@@ -1,0 +1,7 @@
+env
+.env
+.mypy_cache
+__pycache__
+.venv
+logs
+config.json

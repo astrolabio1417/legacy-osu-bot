@@ -24,9 +24,7 @@ cors = CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 credentials = get_user_credentials()
 
-irc = OsuIrc(
-    username=credentials.get("username", ""), password=credentials.get("password", "")
-)
+irc = OsuIrc(username=credentials.get("username", ""), password=credentials.get("password", ""))
 
 roommanager = RoomManager(irc=irc)
 
@@ -78,6 +76,7 @@ def delete_room(room_unique_id: str) -> tuple[MessageResponse | RoomData, int]:
         return {"message": "No room found!"}, 400
 
     room.send_close()
+    roommanager.remove_room(room)
 
     return {"message": "Room has been deleted"}, 204
 

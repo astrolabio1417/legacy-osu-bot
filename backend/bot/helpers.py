@@ -29,9 +29,7 @@ def get_user_credentials() -> UserCredentials:
         configuration = json.loads(f.read())
 
     if not configuration.get("username") or not configuration.get("password"):
-        raise KeyError(
-            "No user IRC credentials found! set config.json or env vars to continue..."
-        )
+        raise KeyError("No user IRC credentials found! set config.json or env vars to continue...")
 
     return {
         "username": configuration.get("username"),
@@ -52,9 +50,7 @@ def parse_beatmap_data(beatmap: dict[str, Any]) -> dict[str, Any]:
         "language",
     ]
 
-    if not isinstance(beatmap, dict) or not all(
-        key in beatmap for key in required_keys
-    ):
+    if not isinstance(beatmap, dict) or not all(key in beatmap for key in required_keys):
         raise ValueError("Invalid beatmap data")
 
     keys_to_convert = ["star", "ar", "cs", "od", "length", "bpm"]
@@ -100,13 +96,7 @@ def parse_room_data(room: dict[str, Any]) -> dict[str, Any]:
     }
 
     for room_key, enum in room_enums.items():
-        if room_key not in room:
-            continue
-
-        try:
-            room[room_key] = enum[room[room_key]]
-        except KeyError:
-            room.pop(room_key)
+        room[room_key] = enum[room.get(room_key, None)]
 
     room["beatmap"]["play_mode"] = room.get("play_mode", PLAY_MODE.OSU)
     parse_beatmap_data(room["beatmap"])
@@ -114,8 +104,8 @@ def parse_room_data(room: dict[str, Any]) -> dict[str, Any]:
     return room
 
 
-def extract_enum(e: Any) -> list[str]:
-    return [a.name for a in e]
+def extract_enum(enum: Any) -> list[str]:
+    return [a.name for a in enum]
 
 
 def is_username_valid(username: str) -> bool:

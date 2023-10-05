@@ -1,22 +1,18 @@
-from __future__ import annotations
 import re
 from collections import deque
 import uuid
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from dataclasses import dataclass, field
 from bot.parsers import (
     get_beatmap_id_from_url,
-    get_beatmapset_id_from_url,
     parse_slot,
     normalize_username,
 )
 from bot.beatmap import RoomBeatmap
 from bot.counter import Counter
 from bot.enums import BOT_MODE, PLAY_MODE, TEAM_MODE, SCORE_MODE, RoomData
-from bot.api import osu_api
-
-if TYPE_CHECKING:
-    from bot.irc import OsuIrc
+from bot.osuapi import osu_api
+from bot.irc import OsuIrc
 
 
 class Users(deque[Any]):
@@ -48,7 +44,7 @@ class Room:
     _closed: bool = False
     users: Users = field(default_factory=Users)
     skip_votes: set[str] = field(default_factory=set)
-    _aborts: set[str] = field(default_factory=set)
+    abort_votes: set[str] = field(default_factory=set)
     tmp_users: set[str] = field(default_factory=set)
     _tmp_total_users: int = 0
     countdown_message_seconds = [3, 10, 30, 60, 90, 120, 150, 180]
@@ -96,17 +92,13 @@ class Room:
             "beatmap": self.beatmap.get_json(),
         }
 
-    def on_count(self, count: int) -> int:
+    def on_count(self, count: int) -> None:
         if count in self.countdown_message_seconds:
             self.send_start_message(count)
 
-        return count
-
-    def on_count_finished(self) -> bool:
+    def on_count_finished(self) -> None:
         if self.users:
-            self.irc.send_private_message(self.room_id, "!mp start")
-
-        return True
+            self.send_message("!mp start")
 
     def configure(self, **kwargs: Any) -> None:
         beatmap = kwargs.pop("beatmap", {})
@@ -122,8 +114,11 @@ class Room:
         self.on_match_created(self.room_id)
 
     def restart(self) -> None:
-        self.close()
+        self.on_closed()
         self.create()
+
+    def connect(self) -> None:
+        self.is_connected = True
 
     def disconnect(self) -> None:
         self.is_connected = False
@@ -143,27 +138,25 @@ class Room:
             self.room_id = room_id
 
         self.irc.send(f"JOIN {self.room_id}")
-        self.is_connected = True
         return self.is_connected
 
     def send_close(self) -> None:
-        self.irc.send_private_message(self.room_id, "!mp close")
+        self.send_message("!mp close")
 
-    def close(self) -> None:
+    def on_closed(self) -> None:
         self.tmp_users.clear()
         self._counter.stop()
         self._tmp_total_users = 0
         self.room_id = ""
         self.users.clear()
-        self.skip_votes.clear()
-        self._aborts.clear()
-        self.is_connected = False
+        self.clear_skip_votes()
+        self.clear_abort_votes()
+        self.disconnect()
         self.is_created = False
         self.is_configured = False
 
     def on_match_created(self, room_id: str) -> None:
         self.room_id = room_id
-        self.is_connected = True
         self.setup()
 
     def setup(self) -> None:
@@ -219,9 +212,11 @@ class Room:
     def remove_user(self, username: str) -> None:
         self.users.remove(username)
         self.skip_votes.discard(username)
+        self.abort_votes.discard(username)
 
     def on_host_changed(self, host: str) -> None:
-        self.skip_votes.clear()
+        self.clear_skip_votes()
+        self.clear_abort_votes()
 
         is_auto_host = self.bot_mode == BOT_MODE.AUTO_HOST
 
@@ -234,19 +229,19 @@ class Room:
     def on_match_started(self) -> None:
         self.stop_counter()
         self.clear_skip_votes()
-        self.clear_aborts()
+        self.clear_abort_votes()
 
         if self.bot_mode == BOT_MODE.AUTO_HOST:
             self.rotate_host()
 
         if not self.users:
-            self.irc.send_private_message(self.room_id, "!mp abort")
+            self.send_message("!mp abort")
 
     def clear_skip_votes(self) -> None:
         self.skip_votes.clear()
 
-    def clear_aborts(self) -> None:
-        self._aborts.clear()
+    def clear_abort_votes(self) -> None:
+        self.abort_votes.clear()
 
     def stop_counter(self) -> None:
         self._counter.stop()
@@ -286,6 +281,7 @@ class Room:
 
     def on_changed_beatmap_to(self, title: str, url: str, beatmap_id: int) -> None:
         self.clear_skip_votes()
+        self.clear_abort_votes()
 
         if self.bot_mode == BOT_MODE.AUTO_ROTATE_MAP:
             self.send_beatmap_alt()
@@ -298,7 +294,7 @@ class Room:
 
         if not beatmap:
             message = f"!mp map {self.beatmap.current.id} {self.play_mode.value} | Failed to find beatmap!"
-            self.irc.send_private_message(self.room_id, message)
+            self.send_message(message)
             return
 
         # TODO bypas for now, ossapi wrapper can't fetch the full data of beatmapset using beatmap.beatmapset
@@ -345,11 +341,11 @@ class Room:
             self.rotate()
             return
 
-        self.irc.send_private_message(self.room_id, f"Skip voting: {current_votes} / {half_total}")
+        self.send_message(f"Skip voting: {current_votes} / {half_total}")
 
     def on_abort(self, sender: str) -> None:
-        self._aborts.add(sender)
-        current_votes = len(self._aborts)
+        self.abort_votes.add(sender)
+        current_votes = len(self.abort_votes)
         half_total = round(current_votes / 2)
 
         if current_votes >= half_total:
@@ -415,7 +411,7 @@ class Room:
             return
 
         if message == "Closed the match":
-            self.close()
+            self.on_closed()
         elif "joined in slot" in message:
             username = normalize_username(message.split(" joined in slot")[0])
             self.add_user(username)

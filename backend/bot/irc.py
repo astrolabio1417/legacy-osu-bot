@@ -1,9 +1,10 @@
 import socket
 import threading
 import time
+import queue
 from dataclasses import dataclass, field
 from typing import Generator
-
+from my_logger import logger
 from bot.enums import MESSAGE_YIELD
 
 
@@ -16,18 +17,17 @@ class OsuIrc:
     irc_socket: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     is_running: bool = False
     is_connected: bool = False
-    last_sent: float = 0.0
     send_cooldown_per_second = 0.6  #! 10 message per 5 seconds
 
-    message_lists: list[str] = field(default_factory=list)
+    message_queue: queue.Queue[str] = field(default_factory=queue.Queue)
     sender_thread: threading.Thread | None = None
 
     def connect(self, timeout: float = 10.0) -> bool:
-        print(f"~ Connecting to {self.host}:{self.port}...")
+        logger.info(f"~ Connecting to {self.host}:{self.port}...")
         self.is_connected = False
 
         if not self.username or not self.password:
-            print("~ Connection refused! no username or password supplied")
+            logger.info("~ Connection refused! no username or password supplied")
             time.sleep(1)
             return self.is_connected
 
@@ -36,14 +36,14 @@ class OsuIrc:
 
         try:
             self.irc_socket.connect((self.host, self.port))
-            print("~ Connected!")
+            logger.info("~ Connected!")
             self.is_connected = True
             self.direct_send(f"PASS {self.password}")
             self.direct_send(f"NICK {self.username}")
         except TimeoutError:
-            print("~ Timeout Error!")
+            logger.info("~ Timeout Error!")
         except (socket.gaierror, ConnectionRefusedError):
-            print("~ No Internet Connection!")
+            logger.info("~ No Internet Connection!")
 
         return self.is_connected
 
@@ -60,39 +60,30 @@ class OsuIrc:
 
     def run_sender(self) -> None:
         while self.is_running:
-            if not self.message_lists or not self.is_connected:
-                continue
-
-            message = self.message_lists[0]
-            self.message_lists.pop(0)
-            self.direct_send(message)
-
-            if self.send_cooldown_per_second < 0.5:
-                time.sleep(1)
-                print("~ SEND COOLDOWN TO 1 PER SEC")
-            else:
-                print("~ SEND COOLDOWN PER SEC: ", self.send_cooldown_per_second)
+            if not self.message_queue.empty() and self.is_connected:
+                message = self.message_queue.get()
+                self.direct_send(message)
                 time.sleep(self.send_cooldown_per_second)
 
     def direct_send(self, message: str) -> None:
-        print(f"send: {message}")
+        logger.debug(f"SEND: {message}")
         self.irc_socket.send(f"{message}\n".encode())
 
     def send(self, message: str) -> bool:
-        self.message_lists.append(message)
+        self.message_queue.put(message)
         return self.is_connected
 
     def send_private_message(self, channel: str, message: str) -> bool:
         return self.send(f"PRIVMSG {channel} : {message}")
 
-    def message_generator(self) -> Generator[str | MESSAGE_YIELD, None, bool]:
+    def message_generator(self) -> Generator[str | MESSAGE_YIELD, None, None]:
         """generate live user messages"""
 
-        buffer = ""
+        buffer: str = ""
 
         while self.is_running:
             if not self.is_connected:
-                reconnected = self.connect()
+                reconnected: bool = self.connect()
 
                 if reconnected:
                     yield MESSAGE_YIELD.RECONNECTED
@@ -102,27 +93,23 @@ class OsuIrc:
                 continue
 
             try:
-                message = self.receive()
+                message: str = self.receive()
             except Exception:
-                print(f"~ Connection has been lost. Receive error")
+                logger.info(f"~ Connection has been lost. Receive error")
                 self.disconnect()
                 yield MESSAGE_YIELD.DISCONNECT
                 continue
 
             if message:
-                messages = f"{buffer}{message}".split("\n")
+                messages: list[str] = f"{buffer}{message}".split("\n")
                 buffer = messages[-1]
 
-                for _message in messages[0:-1]:
-                    yield _message
-
+                yield from messages[0:-1]
                 continue
 
             yield MESSAGE_YIELD.DISCONNECT
             self.disconnect()
-            print("~ Connection has been lost. 0 byte message")
-
-        return False
+            logger.info("~ Connection has been lost. 0 byte message")
 
     def start(self) -> None:
         self.is_running = True

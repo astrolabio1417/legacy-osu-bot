@@ -4,40 +4,38 @@ from bot.constants import VALID_ROLES
 
 
 def normalize_username(username: str) -> str:
-    return f"{username}".strip().replace(" ", "_")
+    return username.strip().replace(" ", "_")
 
 
 def parse_slot(message: str) -> SlotDict:
-    words = message.split()
-    slot = words[1]
-    user_and_roles = url = username = None
+    message_words = message.split()
+    slot = message_words[1]
 
-    if words[2] != "Ready":
-        status = " ".join(words[2:4])
-        url = words[4]
-        user_and_roles = " ".join(words[5:])
+    if message_words[2] != "Ready":
+        status = " ".join(message_words[2:4])
+        url = message_words[4]
+        user_roles = " ".join(message_words[5:])
     else:
-        status = words[2]
-        url = words[3]
-        user_and_roles = " ".join(words[4:])
+        status = message_words[2]
+        url = message_words[3]
+        user_roles = " ".join(message_words[4:])
 
-    username = user_and_roles
+    username = user_roles
     roles = []
-    start_roles_index = user_and_roles.rfind("[")
+    start_roles_index = user_roles.rfind("[")
 
-    if user_and_roles[-1] == "]" and start_roles_index != -1:
-        username = user_and_roles[0 : start_roles_index - 1]
-        roles = user_and_roles[start_roles_index + 1 : -1].replace(" ", "").split("/")
-        roles = roles[0:-1] + roles[-1].split(",")
+    if user_roles.endswith("]") and start_roles_index != -1:
+        roles = user_roles[start_roles_index + 1 : -1].replace(" ", "").split("/")
+        roles = roles[:-1] + roles[-1].split(",")
 
-        for role in roles:
-            if role.strip() not in VALID_ROLES:
-                username = user_and_roles
-                roles = []
-                break
+        if any(role.strip() not in VALID_ROLES for role in roles):
+            roles = []
+        else:
+            username = user_roles[: start_roles_index - 1]
 
     username = username.strip().replace(" ", "_")
     user_id = url.split("/")[-1]
+
     return SlotDict(
         username=username,
         user_id=user_id,
@@ -53,40 +51,33 @@ def parse_message(message: str) -> Optional[MessageDict]:
     if len(words) < 3 or not message.startswith(":"):
         return None
 
-    NO_CHANNEL_COMMANDS = ["JOIN", "PART", "QUIT"]
-    INVALID_CHANNEL_END_STRINGS = ["!cho@ppy.sh", "!cho@cho.ppy.sh"]
-    INVALID_MESSAGE_START_CHAR = ":"
-    sender = words[0][1:]
+    no_channel_commands = {"JOIN", "PART", "QUIT"}
+    invalid_channel_end_strings = {"!cho@ppy.sh", "!cho@cho.ppy.sh"}
+    invalid_message_start_char = ":"
+
+    sender = words[0][1:].rstrip("".join(invalid_channel_end_strings))
     command = words[1]
     channel = words[2]
-    message = ""
+    message = " ".join(words[3:])
 
-    for invalid_str in INVALID_CHANNEL_END_STRINGS:
-        if sender.endswith(invalid_str):
-            sender = sender[0 : -len(invalid_str)]
-
-    if command in NO_CHANNEL_COMMANDS:
+    if command in no_channel_commands:
         channel = ""
         message = " ".join(words[2:])
-    else:
-        message = " ".join(words[3:])
 
-    if message.startswith(INVALID_MESSAGE_START_CHAR):
-        message = message[1:]
+    message = message.lstrip(invalid_message_start_char)
 
     return MessageDict(sender=sender, command=command, channel=channel, message=message)
 
 
 def get_beatmapset_id_from_url(url: str) -> int:
     parts = url.split("/")
-    beatmapset_id = parts[-2].split("#")[0]
-    print(f"beatmapset_id: {beatmapset_id}, url: {url}, parts: {parts}")
+    beatmapset_id = parts[-2].partition("#")[0]
     return int(beatmapset_id)
 
 
 def get_beatmap_id_from_url(url: str) -> int:
     parts = url.split("/")
-    beatmap_id = parts[-1].split("#")[0]
+    beatmap_id = parts[-1].partition("#")[0]
     return int(beatmap_id)
 
 

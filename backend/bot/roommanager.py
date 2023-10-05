@@ -2,6 +2,7 @@ from __future__ import annotations
 import re
 import threading
 
+from my_logger import logger
 from typing import Optional
 from dataclasses import dataclass, field
 from bot.parsers import parse_message
@@ -21,9 +22,7 @@ class RoomManager:
 
     def get_room(self, unique_id: str = "", room_id: str = "") -> Optional[Room]:
         for room in self.rooms:
-            if (unique_id and unique_id == room.unique_id) or (
-                room_id and room_id == room.room_id
-            ):
+            if (unique_id and unique_id == room.unique_id) or (room_id and room_id == room.room_id):
                 return room
         return None
 
@@ -32,24 +31,28 @@ class RoomManager:
         return room
 
     def remove_room(self, room: Room) -> bool:
-        if room in self.rooms:
+        try:
             self.rooms.remove(room)
             return True
-        return False
+        except ValueError:
+            return False
 
     def disconnect_rooms(self) -> None:
         for room in self.rooms:
             room.disconnect()
 
     def on_match_created(self, message: str) -> None:
-        id_name = re.search("https://osu.ppy.sh/mp/(\d*)? (.*)", message)
+        match_info = re.search(r"https://osu.ppy.sh/mp/(\d*)? (.*)", message)
 
-        if id_name:
-            name, room_id = id_name.group(2), id_name.group(1)
-            room = self.get_room(unique_id=name)
+        if not match_info:
+            return
 
-            if room:
-                room.on_match_created(room_id=f"#mp_{room_id}")
+        room_id, name = match_info.groups()
+        room = self.get_room(unique_id=name)
+
+        if room:
+            room.on_match_created(room_id=f"#mp_{room_id}")
+            room.connect()
 
     def on_message_receive(self, message: Optional[str | MESSAGE_YIELD]) -> None:
         if isinstance(message, str):
@@ -57,6 +60,9 @@ class RoomManager:
 
             if not message_dict:
                 return
+
+            if message_dict.get("command") != "QUIT":
+                logger.debug(message_dict)
 
             channel = message_dict.get("channel", "")
             cmd_str = message_dict.get("command", "")
@@ -66,68 +72,57 @@ class RoomManager:
             if cmd_str == "QUIT":
                 return
 
-            print(channel, cmd_str, sender, message)
-
-            is_room_not_created = (
-                sender == "cho.ppy.sh"
-                and message.startswith("#mp_")
-                and "No such channel #mp_" in message
-            )
-
-            if is_room_not_created:
-                room_id = message.split(" ")[0]
-                room = self.get_room(room_id=room_id)
-
-                if room:
-                    room.restart()
-
-            if channel == self.irc.username:
-                """PRIVATE MESSAGE"""
-                if sender == "BanchoBot":
-                    if message.startswith("Created the tournament match"):
-                        self.on_match_created(message)
+            if channel == self.irc.username and sender == "BanchoBot":
+                if message.startswith("Created the tournament match"):
+                    self.on_match_created(message)
             elif channel.startswith("#mp_"):
-                """ROOM MESSAGE"""
                 room = self.get_room(room_id=channel)
 
                 if isinstance(room, Room):
                     room.on_message_receive(sender, message)
+            elif channel == self.irc.username and message.startswith("#mp_"):
+                room = self.get_room(room_id=message.split(" ")[0])
+
+                if not isinstance(room, Room):
+                    return
+
+                if cmd_str == "403":
+                    room.restart()
+                elif cmd_str == "332":
+                    room.connect()
 
             return
 
         match message:
             case MESSAGE_YIELD.DISCONNECT:
+                logger.error("Connection has been lost")
                 self.disconnect_rooms()
             case MESSAGE_YIELD.RECONECTION_FAILED:
-                print("Reconnecting...")
+                logger.error("Reconnection failed")
             case MESSAGE_YIELD.RECONNECTED:
+                logger.info("Connection has been reestablished")
                 self.join_rooms()
 
     def create_rooms(self) -> None:
         for room in self.rooms:
             if room._closed:
                 room.create()
-        return
 
     def join_rooms(self) -> None:
         for room in self.rooms:
             room.join()
-        return
 
     def run_message_listener(self) -> None:
         for message in self.irc.message_generator():
             self.on_message_receive(message)
 
-    def start(self, run_on_thread: int = False) -> threading.Thread:
-        """start receiving messages"""
-        print("Starting osu IRC")
-
+    def start(self, run_on_thread: bool = False) -> Optional[threading.Thread]:
         self.irc.start()
 
-        thread = threading.Thread(target=self.run_message_listener, args=())
-        thread.start()
+        if run_on_thread:
+            thread = threading.Thread(target=self.run_message_listener)
+            thread.start()
+            return thread
 
-        if not run_on_thread:
-            thread.join()
-
-        return thread
+        self.run_message_listener()
+        return None
