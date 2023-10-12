@@ -1,6 +1,5 @@
 import {
   Button,
-  Checkbox,
   Divider,
   Form,
   Input,
@@ -9,8 +8,8 @@ import {
   Slider,
 } from "antd";
 import useEnums from "../../../hooks/useEnums";
-import { IRoomForm } from "../../../types/roomFormInterface";
 import { useState } from "react";
+import { IRoomForm } from "../../../types/roomInterface";
 
 interface RoomFormProps {
   initialValues?: IRoomForm;

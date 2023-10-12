@@ -1,5 +1,5 @@
 import { toast } from "react-toastify";
-import { IRoomForm } from "../types/roomFormInterface";
+import { IRoomForm } from "../types/roomInterface";
 import { API } from "../data/constants";
 
 export async function createRoom(values: IRoomForm) {

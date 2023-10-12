@@ -1,6 +1,5 @@
 import { Button, Card, List, Modal, Space } from "antd";
-import { IRoom } from "../../../types/roomInterface";
-import { IRoomForm } from "../../../types/roomFormInterface";
+import { IRoom, IRoomForm } from "../../../types/roomInterface";
 import { deleteRoom, updateRoom } from "../../../services/roomService";
 import { useState } from "react";
 import RoomForm from "./RoomForm";
@@ -17,9 +16,9 @@ export default function RoomCard(props: IRoom) {
     is_created,
     room_id,
     users,
-    is_closed,
     is_connected,
     id,
+    beatmap,
   } = room ?? {};
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -36,16 +35,10 @@ export default function RoomCard(props: IRoom) {
         <div style={{ display: "flex", flexDirection: "column" }}>
           <span
             style={{
-              color: is_closed ? "gray" : is_connected ? "green" : "red",
+              color: is_connected ? "green" : "red",
             }}
           >
-            <b>
-              {is_closed
-                ? "Closed"
-                : is_connected
-                ? "Connected"
-                : "Not Connected"}
-            </b>
+            <b>{is_connected ? "Connected" : "Not Connected"}</b>
           </span>
           <span>
             <b>ID:</b> {id}
@@ -69,7 +62,32 @@ export default function RoomCard(props: IRoom) {
             <b>Size:</b> {room_size}
           </span>
           <span>
+            <b>Genre:</b> {beatmap.genre}
+          </span>
+          <span>
+            <b>Language:</b> {beatmap.language}
+          </span>
+          <span>
+            <b>Rank Status:</b> {beatmap.rank_status}
+          </span>
+          <span>
+            <b>Star: </b> {beatmap.star[0]} - {beatmap.star[1]}
+          </span>
+          <span>
+            <b>bpm: </b> {beatmap.bpm[0]} - {beatmap.bpm[1]}
+          </span>
+          <span>
+            <b>cs: </b> {beatmap.cs[0]} - {beatmap.cs[1]}
+          </span>
+          <span>
+            <b>length: </b> {beatmap.length[0]} - {beatmap.length[1]}
+          </span>
+          <span>
             <b>Users:</b> {users.length ? users?.join(", ") : "..."}
+          </span>
+          <span>
+            <b>Skip Votes: </b>{" "}
+            {props.skips.length ? props.skips?.join(", ") : "..."}
           </span>
 
           <Space wrap style={{ marginTop: 15 }}>
